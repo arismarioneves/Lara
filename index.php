@@ -1,14 +1,6 @@
 <?php
 // index.php - Ponto de entrada principal para o agente Lara
 
-// Login via GET (code = 'lara')
-if (isset($_GET['code']) && $_GET['code'] === 'lara') {
-    // Iniciar sessão
-} else {
-    echo "Lara :] - Acesso negado.";
-    exit;
-}
-
 // Carregar configurações
 require_once 'config.php';
 
@@ -148,7 +140,7 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
         </main>
 
         <footer>
-            <p>Lara está utilizando OpenRouter para processamento de linguagem natural e ElevenLabs para voz.</p>
+            <p>Lara é uma assistente virtual projetada para interações por voz, oferecendo suporte eficiente em diversos contextos.</p>
         </footer>
     </div>
 

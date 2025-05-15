@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Elementos da interface
     const startButton = document.getElementById('start-button');
     const stopButton = document.getElementById('stop-button');
-    const clearButton = document.getElementById('clear-button');
+    // const clearButton = document.getElementById('clear-button');
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
     const conversationLog = document.getElementById('conversation-log');
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Configurar eventos dos botões
     startButton.addEventListener('click', startListening);
     stopButton.addEventListener('click', stopListening);
-    clearButton.addEventListener('click', clearConversation);
+    // clearButton.addEventListener('click', clearConversation);
     modelSelector.addEventListener('change', changeModel);
 
     // Inicializar com status padrão
