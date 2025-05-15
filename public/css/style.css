@@ -1,0 +1,189 @@
+/* public/css/style.css - Estilos para a interface do agente Lara */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    color: #2c3e50;
+}
+
+.status-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.status-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.status-indicator.idle {
+    background-color: #95a5a6;
+}
+
+.status-indicator.listening {
+    background-color: #3498db;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.active {
+    background-color: #2ecc71;
+}
+
+.status-indicator.error {
+    background-color: #e74c3c;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+    }
+}
+
+.model-selector {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.model-selector label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.model-selector select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: white;
+    font-size: 14px;
+}
+
+.conversation-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    height: 400px;
+    overflow-y: auto;
+}
+
+.conversation-log {
+    padding: 20px;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #e8f4fd;
+    margin-left: auto;
+    text-align: right;
+}
+
+.assistant-message {
+    background-color: #f0f0f0;
+    margin-right: auto;
+}
+
+.system-message {
+    background-color: #fffde7;
+    margin: 10px auto;
+    text-align: center;
+    font-style: italic;
+    max-width: 90%;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.primary-button {
+    background-color: #3498db;
+    color: white;
+}
+
+.primary-button:hover {
+    background-color: #2980b9;
+}
+
+.secondary-button {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.secondary-button:hover {
+    background-color: #c0392b;
+}
+
+.tertiary-button {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.tertiary-button:hover {
+    background-color: #7f8c8d;
+}
+
+button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #7f8c8d;
+    font-size: 0.9em;
+}

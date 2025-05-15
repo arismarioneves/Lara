@@ -1,0 +1,4 @@
+public/audio/*
+!public/audio/.gitkeep
+config.php
+.env
