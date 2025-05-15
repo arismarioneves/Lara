@@ -1,6 +1,14 @@
 <?php
 // index.php - Ponto de entrada principal para o agente Lara
 
+// Login via GET (code = 'lara')
+if (isset($_GET['code']) && $_GET['code'] === 'lara') {
+    // Iniciar sessão
+} else {
+    echo "Lara :] - Acesso negado.";
+    exit;
+}
+
 // Carregar configurações
 require_once 'config.php';
 
@@ -94,14 +102,14 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lara - Assistente IA</title>
+    <title>Lara IA</title>
     <link rel="stylesheet" href="public/css/style.css">
 </head>
 
 <body>
     <div class="container">
         <header>
-            <h1>Lara - Sua Assistente Virtual</h1>
+            <h1>Lara IA</h1>
         </header>
 
         <main>
@@ -113,14 +121,18 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
             <div class="model-selector">
                 <label for="ai-model">Modelo de IA:</label>
                 <select id="ai-model" name="ai-model">
+                    <!-- Google: Gemini 2.0 Flash / google/gemini-2.0-flash-001 -->
                     <option value="google/gemini-2.0-flash-001" <?= $currentModel === 'google/gemini-2.0-flash-001' ? 'selected' : '' ?>>Gemini 2.0 Flash</option>
-                    <option value="google/gemini-1.5-pro" <?= $currentModel === 'google/gemini-1.5-pro' ? 'selected' : '' ?>>Gemini 1.5 Pro</option>
-                    <option value="anthropic/claude-3-opus:beta" <?= $currentModel === 'anthropic/claude-3-opus:beta' ? 'selected' : '' ?>>Claude 3 Opus</option>
-                    <option value="anthropic/claude-3-sonnet:beta" <?= $currentModel === 'anthropic/claude-3-sonnet:beta' ? 'selected' : '' ?>>Claude 3 Sonnet</option>
-                    <option value="anthropic/claude-3-haiku:beta" <?= $currentModel === 'anthropic/claude-3-haiku:beta' ? 'selected' : '' ?>>Claude 3 Haiku</option>
-                    <option value="openai/gpt-4o" <?= $currentModel === 'openai/gpt-4o' ? 'selected' : '' ?>>GPT-4o</option>
-                    <option value="openai/gpt-4-turbo" <?= $currentModel === 'openai/gpt-4-turbo' ? 'selected' : '' ?>>GPT-4 Turbo</option>
-                    <option value="meta-llama/llama-3-70b-instruct" <?= $currentModel === 'meta-llama/llama-3-70b-instruct' ? 'selected' : '' ?>>Llama 3 70B</option>
+                    <!-- OpenAI: GPT-4o-mini / openai/gpt-4o-mini -->
+                    <option value="openai/gpt-4o-mini" <?= $currentModel === 'openai/gpt-4o-mini' ? 'selected' : '' ?>>GPT-4o Mini</option>
+                    <!-- Meta: Llama 3.3 70B Instruct / meta-llama/llama-3.3-70b-instruct -->
+                    <option value="meta-llama/llama-3.3-70b-instruct" <?= $currentModel === 'meta-llama/llama-3.3-70b-instruct' ? 'selected' : '' ?>>Llama 3.3 70B</option>
+                    <!-- xAI: Grok 3 Mini Beta / x-ai/grok-3-mini-beta -->
+                    <option value="x-ai/grok-3-mini-beta" <?= $currentModel === 'x-ai/grok-3-mini-beta' ? 'selected' : '' ?>>Grok 3 Mini</option>
+                    <!-- Mistral: Mistral Small 3 / mistralai/mistral-small-24b-instruct-2501 -->
+                    <option value="mistralai/mistral-small-24b-instruct-2501" <?= $currentModel === 'mistralai/mistral-small-24b-instruct-2501' ? 'selected' : '' ?>>Mistral Small 3</option>
+                    <!-- Qwen: Qwen3 235B A22B / qwen/qwen3-235b-a22b -->
+                    <option value="qwen/qwen3-235b-a22b" <?= $currentModel === 'qwen/qwen3-235b-a22b' ? 'selected' : '' ?>>Qwen 3 235B</option>
                 </select>
             </div>
 
@@ -131,7 +143,7 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
             <div class="controls">
                 <button id="start-button" class="primary-button">Iniciar Lara</button>
                 <button id="stop-button" class="secondary-button" disabled>Parar</button>
-                <button id="clear-button" class="tertiary-button">Limpar Conversa</button>
+                <!-- <button id="clear-button" class="tertiary-button">Limpar Conversa</button> -->
             </div>
         </main>
 

@@ -152,13 +152,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function getModelDisplayName(modelId) {
         const modelNames = {
             'google/gemini-2.0-flash-001': 'Google: Gemini 2.0 Flash',
-            'google/gemini-1.5-pro': 'Gemini 1.5 Pro',
-            'anthropic/claude-3-opus:beta': 'Claude 3 Opus',
-            'anthropic/claude-3-sonnet:beta': 'Claude 3 Sonnet',
-            'anthropic/claude-3-haiku:beta': 'Claude 3 Haiku',
-            'openai/gpt-4o': 'GPT-4o',
-            'openai/gpt-4-turbo': 'GPT-4 Turbo',
-            'meta-llama/llama-3-70b-instruct': 'Llama 3 70B'
+            'openai/gpt-4o-mini': 'OpenAI: GPT-4o-mini',
+            'meta-llama/llama-3.3-70b-instruct': 'Meta: Llama 3.3 70B Instruct',
+            'x-ai/grok-3-mini-beta': 'xAI: Grok 3 Mini Beta',
+            'mistralai/mistral-small-24b-instruct-2501': 'Mistral: Mistral Small 3',
+            'qwen/qwen3-235b-a22b': 'Qwen: Qwen3 235B A22B',
         };
 
         return modelNames[modelId] || modelId;
