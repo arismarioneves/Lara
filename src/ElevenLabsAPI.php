@@ -35,7 +35,8 @@ class ElevenLabsAPI
         $filename = md5($text . time()) . '.mp3';
         $filePath = $audioDir . '/' . $filename;
 
-        $fileUrl = 'public/audio/' . $filename;
+        // Usar o script serve-audio.php para servir o arquivo
+        $fileUrl = 'serve-audio.php?file=' . $filename;
 
         // Configurações da voz
         $data = [
@@ -99,7 +100,7 @@ class ElevenLabsAPI
                 return $this->getEmptyAudioDataUrl();
             }
 
-            // Retornar a URL relativa do arquivo de áudio
+            // Retornar a URL para o script que serve o arquivo de áudio
             return $fileUrl;
         } catch (Exception $e) {
             error_log("Exceção ao processar áudio: " . $e->getMessage());
