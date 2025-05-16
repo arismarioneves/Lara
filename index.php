@@ -1,6 +1,34 @@
 <?php
 // index.php - Ponto de entrada principal para o agente Lara
 
+// Verificar se está sendo solicitado um arquivo de áudio
+$requestUri = $_SERVER['REQUEST_URI'];
+if (preg_match('/\/audio\/([a-z0-9]+\.mp3)$/i', $requestUri, $matches)) {
+    $audioFile = __DIR__ . '/public/audio/' . $matches[1];
+
+    // Verificar se o arquivo existe
+    if (file_exists($audioFile)) {
+        // Definir cabeçalhos para o arquivo de áudio
+        header('Content-Type: audio/mpeg');
+        header('Content-Length: ' . filesize($audioFile));
+        header('Accept-Ranges: bytes');
+        header('Cache-Control: public, max-age=86400');
+        header('Access-Control-Allow-Origin: *');
+
+        // Enviar o arquivo
+        readfile($audioFile);
+        exit;
+    } else {
+        // Retornar 404 se o arquivo não existir
+        header('HTTP/1.0 404 Not Found');
+        echo 'Arquivo de áudio não encontrado';
+        exit;
+    }
+}
+
+setlocale(LC_TIME, 'pt_BR', 'pt_BR.utf-8', 'pt_BR.utf-8', 'portuguese');
+date_default_timezone_set('America/Sao_Paulo');
+
 // Carregar configurações
 require_once 'config.php';
 
@@ -87,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Obter o modelo atual (ou usar o padrão)
 $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -136,6 +163,11 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
                 <button id="start-button" class="primary-button">Iniciar Lara</button>
                 <button id="stop-button" class="secondary-button" disabled>Parar</button>
                 <!-- <button id="clear-button" class="tertiary-button">Limpar Conversa</button> -->
+            </div>
+
+            <div class="text-input-container">
+                <input type="text" id="text-input" placeholder="Digite sua mensagem para Lara..." />
+                <button id="send-button" class="primary-button">Enviar</button>
             </div>
         </main>
 

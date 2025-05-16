@@ -1,0 +1,54 @@
+# .htaccess - Configurações para servidor Apache
+
+# Habilitar o mod_rewrite
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
+
+# Configurações de CORS
+<IfModule mod_headers.c>
+    # Permitir acesso de qualquer origem aos arquivos de áudio
+    <FilesMatch "\.(mp3|wav|ogg)$">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header set Access-Control-Allow-Headers "Content-Type"
+    </FilesMatch>
+
+    # Configurar cabeçalhos de cache para arquivos estáticos
+    <FilesMatch "\.(css|js|ico|jpg|jpeg|png|gif)$">
+        Header set Cache-Control "max-age=86400, public"
+    </FilesMatch>
+
+    # Não permitir cache para arquivos PHP
+    <FilesMatch "\.(php)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+    </FilesMatch>
+</IfModule>
+
+# PHP configurações
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 60
+    php_value memory_limit 128M
+</IfModule>
+
+# Proteger arquivos e diretórios
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Impedir listagem de diretórios
+Options -Indexes
+
+# Proteger o arquivo .env
+<Files .env>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Configurar páginas de erro personalizadas
+ErrorDocument 404 /error.php?code=404
+ErrorDocument 500 /error.php?code=500

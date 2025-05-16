@@ -187,3 +187,32 @@ footer {
     color: #7f8c8d;
     font-size: 0.9em;
 }
+
+.text-input-container {
+    display: flex;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.text-input-container input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.audio-play-button {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.audio-play-button:hover {
+    background-color: #2ecc71;
+}
