@@ -74,6 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $openRouter = new OpenRouterAPI(OPENROUTER_API_KEY, $currentModel);
                 $response = $openRouter->generateResponse($userInput, $context);
 
+                // Verificar se a resposta é "off"
+                if (trim(strtolower($response)) === 'off') {
+                    // Se for "off", apenas responder com status especial
+                    echo json_encode([
+                        'status' => 'off',
+                        'message' => 'Assistente está apenas escutando'
+                    ]);
+                    exit;
+                }
+
                 // Atualizar o contexto com a nova interação
                 $conversationManager->updateContext($userInput, $response);
 

@@ -393,6 +393,19 @@ document.addEventListener('DOMContentLoaded', function () {
                             }
                         }
                     }, 2000);
+                } else if (data.status === 'off') {
+                    // Não fazer nada quando a resposta for "off"
+                    console.log("Assistente está apenas escutando (resposta 'off')");
+
+                    // Opcionalmente, podemos atualizar o status para indicar que a assistente está escutando
+                    if (isListening) {
+                        if (continuousListeningMode) {
+                            const remainingTime = formatRemainingTime();
+                            updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+                        } else {
+                            updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                        }
+                    }
                 } else if (data.status === 'waiting' && !continuousListeningMode) {
                     // Se não estiver em modo de escuta contínua, mostrar mensagem de espera
                     console.log("Aguardando ser chamada pelo nome");
