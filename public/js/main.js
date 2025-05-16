@@ -414,6 +414,14 @@ document.addEventListener('DOMContentLoaded', function () {
         return formatDuration(remainingSec);
     }
 
+    // Função para garantir o scroll automático
+    function scrollToBottom() {
+        // Usar requestAnimationFrame para garantir que o scroll ocorra após a renderização
+        requestAnimationFrame(() => {
+            conversationLog.scrollTop = conversationLog.scrollHeight;
+        });
+    }
+
     // Adicionar mensagem ao log de conversa
     function addToConversationLog(role, text) {
         const messageDiv = document.createElement('div');
@@ -426,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function () {
         conversationLog.appendChild(messageDiv);
 
         // Rolar para a mensagem mais recente
-        conversationLog.scrollTop = conversationLog.scrollHeight;
+        scrollToBottom();
     }
 
     // Adicionar mensagem do sistema
@@ -441,7 +449,7 @@ document.addEventListener('DOMContentLoaded', function () {
         conversationLog.appendChild(messageDiv);
 
         // Rolar para a mensagem mais recente
-        conversationLog.scrollTop = conversationLog.scrollHeight;
+        scrollToBottom();
     }
 
     // Reproduzir áudio
@@ -508,6 +516,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const lastMessage = document.querySelector('.assistant-message:last-child');
                 if (lastMessage) {
                     lastMessage.appendChild(playButton);
+                    // Garantir que o botão fique visível
+                    scrollToBottom();
                 }
             }
         });
@@ -527,4 +537,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Inicializar com status padrão
     updateStatus('idle', 'Aguardando ativação...');
+
+    // Observador de mutações para garantir scroll automático quando novas mensagens são adicionadas
+    const conversationObserver = new MutationObserver(() => {
+        scrollToBottom();
+    });
+
+    // Iniciar observação do container de conversa
+    conversationObserver.observe(conversationLog, {
+        childList: true,
+        subtree: true
+    });
 });
