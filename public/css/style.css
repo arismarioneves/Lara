@@ -48,18 +48,19 @@ header h1 {
 
 .status-indicator.listening {
     background-color: #3498db;
-    animation: pulse 1.5s infinite;
+    animation: pulse-blue 1.5s infinite;
 }
 
 .status-indicator.active {
-    background-color: #2ecc71;
+    background-color: #ff5722;
+    animation: pulse-orange 1.5s infinite;
 }
 
 .status-indicator.error {
     background-color: #e74c3c;
 }
 
-@keyframes pulse {
+@keyframes pulse-blue {
     0% {
         transform: scale(0.95);
         box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
@@ -73,6 +74,23 @@ header h1 {
     100% {
         transform: scale(0.95);
         box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+    }
+}
+
+@keyframes pulse-orange {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(255, 87, 34, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 87, 34, 0);
     }
 }
 
@@ -126,11 +144,14 @@ header h1 {
 }
 
 .system-message {
-    background-color: #fffde7;
+    background-color: #f0f8ff;
+    border-left: 3px solid #4a90e2;
+    color: #666;
+    font-style: italic;
     margin: 10px auto;
     text-align: center;
-    font-style: italic;
     max-width: 90%;
+    padding: 8px 12px;
 }
 
 .controls {

@@ -59,9 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Ação para processar o texto reconhecido
         if ($action === 'process_text' && isset($_POST['text'])) {
             $userInput = $_POST['text'];
+            $continuousMode = isset($_POST['continuous_mode']) && $_POST['continuous_mode'] === 'true';
 
-            // Verificar se o nome "Lara" foi mencionado
-            if (stripos($userInput, 'lara') !== false) {
+            // Verificar se o nome "Lara" foi mencionado ou se está em modo contínuo
+            if (stripos($userInput, 'lara') !== false || $continuousMode) {
                 // Gerenciar a conversa e contexto
                 $conversationManager = new ConversationManager();
                 $context = $conversationManager->getContext();
@@ -177,6 +178,13 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
     </div>
 
     <script src="public/js/main.js"></script>
+
+    <script>
+        // Configurações do servidor
+        const appConfig = {
+            continuousListeningDuration: <?php echo CONTINUOUS_LISTENING_DURATION; ?>
+        };
+    </script>
 </body>
 
 </html>

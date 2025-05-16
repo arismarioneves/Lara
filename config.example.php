@@ -23,6 +23,9 @@ define('ELEVEN_LABS_API_KEY', getenv('ELEVEN_LABS_API_KEY') ?: '');
 define('ELEVEN_LABS_VOICE_ID', 'lWq4KDY8znfkV0DrK8Vb'); // Yasmin Alves
 define('DEBUG_MODE', false);
 
+// Configuração do tempo de escuta contínua (em segundos)
+define('CONTINUOUS_LISTENING_DURATION', getenv('CONTINUOUS_LISTENING_DURATION') ?: 120); // 2 minutos por padrão
+
 // Verificar se as chaves de API estão configuradas
 if (empty(OPENROUTER_API_KEY) || empty(ELEVEN_LABS_API_KEY)) {
     error_log('ERRO: Chaves de API não configuradas.');

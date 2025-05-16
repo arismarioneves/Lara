@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function () {
     let recognition = null;
     let recognitionActive = false;
 
+    // Estado de escuta contínua
+    let continuousListeningMode = false;
+    let continuousListeningEndTime = null;
+    let continuousListeningTimer = null;
+
+    // Configuração de tempo de escuta contínua (padrão: 120 segundos = 2 minutos)
+    const continuousListeningDuration = window.appConfig?.continuousListeningDuration || 120;
+
     // Função para processar entrada de texto manual
     function handleTextInput() {
         const text = textInput.value.trim();
@@ -71,6 +79,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Adicionar texto reconhecido ao log
             addToConversationLog('user', transcript);
 
+            // Verificar se o nome "Lara" foi mencionado
+            if (transcript.toLowerCase().includes('lara') && !continuousListeningMode) {
+                // Ativar modo de escuta contínua
+                activateContinuousListening();
+            }
+
             // Enviar para processamento no servidor
             processUserInput(transcript);
         };
@@ -112,6 +126,87 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         return true;
+    }
+
+    // Ativar modo de escuta contínua
+    function activateContinuousListening() {
+        // Cancelar qualquer temporizador anterior
+        if (continuousListeningTimer) {
+            clearTimeout(continuousListeningTimer);
+        }
+
+        // Ativar modo de escuta contínua
+        continuousListeningMode = true;
+
+        // Definir o tempo de término
+        continuousListeningEndTime = Date.now() + (continuousListeningDuration * 1000);
+
+        // Atualizar status
+        updateStatus('active', `Modo de escuta contínua ativado por ${formatDuration(continuousListeningDuration)}`);
+
+        // Configurar temporizador para desativar o modo após o tempo configurado
+        continuousListeningTimer = setTimeout(() => {
+            deactivateContinuousListening();
+        }, continuousListeningDuration * 1000);
+
+        // Adicionar mensagem do sistema
+        addSystemMessage(`Modo de escuta contínua ativado por ${formatDuration(continuousListeningDuration)}`);
+
+        // Iniciar atualizações de status periódicas
+        startStatusUpdates();
+    }
+
+    // Desativar modo de escuta contínua
+    function deactivateContinuousListening() {
+        continuousListeningMode = false;
+        continuousListeningEndTime = null;
+
+        if (continuousListeningTimer) {
+            clearTimeout(continuousListeningTimer);
+            continuousListeningTimer = null;
+        }
+
+        // Atualizar status
+        if (isListening) {
+            updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+        }
+
+        // Adicionar mensagem do sistema
+        addSystemMessage('Modo de escuta contínua desativado');
+    }
+
+    // Iniciar atualizações periódicas do status
+    function startStatusUpdates() {
+        // Atualizar a cada segundo
+        const statusInterval = setInterval(() => {
+            if (!continuousListeningMode) {
+                clearInterval(statusInterval);
+                return;
+            }
+
+            const remainingTime = formatRemainingTime();
+            if (remainingTime) {
+                updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+            }
+        }, 1000);
+    }
+
+    // Formatar duração em formato legível
+    function formatDuration(seconds) {
+        if (!seconds && seconds !== 0) return '';
+
+        if (seconds < 60) {
+            return `${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`;
+        } else {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+
+            if (remainingSeconds === 0) {
+                return `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+            } else {
+                return `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} e ${remainingSeconds} ${remainingSeconds === 1 ? 'segundo' : 'segundos'}`;
+            }
+        }
     }
 
     // Iniciar o reconhecimento com segurança
@@ -184,6 +279,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Parar a escuta
     function stopListening() {
         isListening = false;
+
+        // Desativar modo de escuta contínua se estiver ativo
+        if (continuousListeningMode) {
+            deactivateContinuousListening();
+        }
 
         if (recognition && recognitionActive) {
             try {
@@ -269,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `action=process_text&text=${encodeURIComponent(text)}`
+            body: `action=process_text&text=${encodeURIComponent(text)}&continuous_mode=${continuousListeningMode}`
         })
             .then(response => response.json())
             .then(data => {
@@ -285,14 +385,33 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateStatus('active', 'Lara está respondendo...');
                     setTimeout(() => {
                         if (isListening) {
-                            updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                            if (continuousListeningMode) {
+                                const remainingTime = formatRemainingTime();
+                                updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+                            } else {
+                                updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                            }
                         }
                     }, 2000);
+                } else if (data.status === 'waiting' && !continuousListeningMode) {
+                    // Se não estiver em modo de escuta contínua, mostrar mensagem de espera
+                    console.log("Aguardando ser chamada pelo nome");
                 }
             })
             .catch(error => {
                 console.error('Erro ao processar texto:', error);
             });
+    }
+
+    // Formatar o tempo restante de escuta contínua
+    function formatRemainingTime() {
+        if (!continuousListeningEndTime) return '';
+
+        const now = Date.now();
+        const remainingMs = Math.max(0, continuousListeningEndTime - now);
+        const remainingSec = Math.ceil(remainingMs / 1000);
+
+        return formatDuration(remainingSec);
     }
 
     // Adicionar mensagem ao log de conversa
