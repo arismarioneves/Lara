@@ -125,6 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Obter o modelo atual (ou usar o padrão)
 $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
+
+$cssVersion = filemtime(__DIR__ . '/public/css/style.css');
+$jsVersion = filemtime(__DIR__ . '/public/js/main.js');
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -133,7 +136,7 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lara IA</title>
-    <link rel="stylesheet" href="public/css/style.css">
+    <link rel="stylesheet" href="public/css/style.css?v=<?= $cssVersion; ?>">
 </head>
 
 <body>
@@ -187,12 +190,12 @@ $currentModel = $_SESSION['current_model'] ?? OPENROUTER_MODEL;
         </footer>
     </div>
 
-    <script src="public/js/main.js"></script>
+    <script src="public/js/main.js?v=<?= $jsVersion; ?>"></script>
 
     <script>
         // Configurações do servidor
         const appConfig = {
-            continuousListeningDuration: <?php echo CONTINUOUS_LISTENING_DURATION; ?>
+            continuousListeningDuration: <?= CONTINUOUS_LISTENING_DURATION; ?>
         };
     </script>
 </body>
