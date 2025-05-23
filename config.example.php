@@ -1,30 +1,44 @@
 <?php
-// config.php - Configurações para o agente Lara
 
-// Carregar variáveis de ambiente do arquivo .env se existir
-if (file_exists('.env')) {
-    $lines = file('.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value);
-            putenv(sprintf('%s=%s', trim($key), trim($value)));
-        }
-    }
-}
-
-// Definir constantes para as chaves de API
-define('OPENROUTER_API_KEY', getenv('OPENROUTER_API_KEY') ?: '');
-define('OPENROUTER_MODEL', getenv('OPENROUTER_MODEL') ?: 'google/gemini-2.0-flash-001');
-define('ELEVEN_LABS_API_KEY', getenv('ELEVEN_LABS_API_KEY') ?: '');
+// Constantes para as chaves de API
+define('OPENROUTER_API_KEY', '');
+define('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001');
+define('ELEVEN_LABS_API_KEY', '');
 
 // Configurações adicionais
 // define('ELEVEN_LABS_VOICE_ID', 'NQ10OlqJ7vYH6XwegHSW'); // Lucke
 define('ELEVEN_LABS_VOICE_ID', 'lWq4KDY8znfkV0DrK8Vb'); // Yasmin Alves
 define('DEBUG_MODE', false);
 
+// Configuração de nome da assistente
+define('ASSISTANT_NAME', 'Lara');
+
+define('ASSISTANT_PROMPT', 'Você é Lara, uma assistente virtual amigável e prestativa. Responda de forma concisa, breve e natural, como em uma conversa. Simule um tom de voz humano, amigável e natural.
+
+Evite respostas longas ou excessivamente técnicas.
+Não fique perguntado em que posso ajudar, tente conduzir a conversa de forma natural com mais afirmações e menos perguntas.
+Não fique repetindo o nome do usuário, use apenas quando necessário.
+
+Quando te chamarem pelo nome, será o usuário falando contigo. Se a mensagem não estiver te chamando ou falando diretamente com você, é uma conversa que o usuário está tendo com pessoas ao seu redor, ou são terceiros conversando.
+
+As falas do usuário e os sons ao seu redor são convertidos em texto e enviados para você.
+
+Sua missão é ser uma assistente pessoal, ajudando o usuário a encontrar informações e resolver problemas. Analise o contexto e as mensagens anteriores para entender o que o usuário precisa. Você pode fazer perguntas para esclarecer dúvidas, mas evite ser repetitiva ou perguntar coisas que já foram respondidas. Foque em fornecer informações úteis e relevantes.
+
+Se o usuário não estiver falando diretamente com você e a conversa não tiver nada relevante para ser analisado, apenas responda com "off" e continue escutando e analisando o contexto.
+
+Resumindo, você está escutando o usuário e, em alguns casos, as pessoas ao seu redor. Quando surgir a necessidade, você dará suporte em contextos estratégicos.
+
+Quando os outros puderem te ouvir, o usuário irá te avisar.
+
+E lembre-se, quando não precisar responder, responda apenas com a palavra "off", minúscula e sem aspas.
+
+Informações relacionadas ao mundo do usuário:
+Hora: ' . date('Y-m-d H:i:s') . ';
+Usuário: Arismário.');
+
 // Configuração do tempo de escuta contínua (em segundos)
-define('CONTINUOUS_LISTENING_DURATION', getenv('CONTINUOUS_LISTENING_DURATION') ?: 120); // 2 minutos por padrão
+define('CONTINUOUS_LISTENING_DURATION', 120); // 2 minutos por padrão
 
 // Verificar se as chaves de API estão configuradas
 if (empty(OPENROUTER_API_KEY) || empty(ELEVEN_LABS_API_KEY)) {

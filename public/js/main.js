@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
     const conversationLog = document.getElementById('conversation-log');
-    const modelSelector = document.getElementById('ai-model');
 
     // Elementos adicionais
     const textInput = document.getElementById('text-input');
@@ -323,28 +322,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Mudar o modelo de IA
-    function changeModel() {
-        const selectedModel = modelSelector.value;
-
-        fetch('index.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `action=change_model&model=${encodeURIComponent(selectedModel)}`
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    addSystemMessage(`Modelo alterado para ${getModelDisplayName(selectedModel)}.`);
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao mudar modelo:', error);
-            });
-    }
-
     // Obter nome amigável do modelo
     function getModelDisplayName(modelId) {
         const modelNames = {
@@ -544,7 +521,6 @@ document.addEventListener('DOMContentLoaded', function () {
     startButton.addEventListener('click', startListening);
     stopButton.addEventListener('click', stopListening);
     // clearButton.addEventListener('click', clearConversation);
-    modelSelector.addEventListener('change', changeModel);
 
     // Inicializar com status padrão
     updateStatus('idle', 'Aguardando ativação...');

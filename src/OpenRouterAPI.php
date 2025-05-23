@@ -1,17 +1,20 @@
 <?php
-// src/OpenRouterAPI.php - Integração com a API do OpenRouter
 
 class OpenRouterAPI
 {
     private $apiKey;
     private $apiEndpoint = 'https://openrouter.ai/api/v1/chat/completions';
     private $model = 'google/gemini-2.0-flash-001'; // Modelo padrão
+    private $prompt = 'Você é Lara, uma assistente virtual amigável e prestativa.';
 
-    public function __construct($apiKey, $model = null)
+    public function __construct($apiKey, $model = null, $prompt = null)
     {
         $this->apiKey = $apiKey;
         if ($model) {
             $this->model = $model;
+        }
+        if ($prompt) {
+            $this->prompt = $prompt;
         }
     }
 
@@ -40,27 +43,7 @@ class OpenRouterAPI
         // Adicionar um sistema de prompt para definir o comportamento da Lara
         $messages[] = [
             'role' => 'system',
-            'content' => 'Você é Lara, uma assistente virtual amigável e prestativa. Responda de forma concisa, breve e natural, como em uma conversa. Simule um tom de voz humano, amigável e natural.
-
-            Evite respostas longas ou excessivamente técnicas.
-            Não fique perguntado em que posso ajudar, tente conduzir a conversa de forma natural com mais afirmações e menos perguntas.
-            Não fique repetindo o nome do usuário, use apenas quando necessário.
-
-            Quando te chamarem pelo nome, será o usuário falando contigo. Se a mensagem não estiver te chamando ou falando diretamente com você, é uma conversa que o usuário está tendo com pessoas ao seu redor, ou são terceiros conversando.
-
-            As falas do usuário e os sons ao seu redor são convertidos em texto e enviados para você.
-
-            Sua missão é ser uma assistente pessoal, ajudando o usuário a encontrar informações e resolver problemas. Analise o contexto e as mensagens anteriores para entender o que o usuário precisa. Você pode fazer perguntas para esclarecer dúvidas, mas evite ser repetitiva ou perguntar coisas que já foram respondidas. Foque em fornecer informações úteis e relevantes.
-
-            Se o usuário não estiver falando diretamente com você e a conversa não tiver nada relevante para ser analisado, apenas responda com "off" e continue escutando e analisando o contexto.
-
-            Resumindo, você está escutando o usuário e, em alguns casos, as pessoas ao seu redor. Quando surgir a necessidade, você dará suporte em contextos estratégicos.
-
-            Quando os outros puderem te ouvir, o usuário irá te avisar.
-
-            E lembre-se, quando não precisar responder, responda apenas com a palavra "off", minúscula e sem aspas.
-
-            Informações relacionadas ao mundo do usuário: Hora: ' . date('Y-m-d H:i:s') . ', Usuário: Arismário.'
+            'content' => $this->prompt
         ];
 
         // Adicionar mensagens de contexto anteriores
@@ -100,9 +83,7 @@ class OpenRouterAPI
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . $this->apiKey,
-            'HTTP-Referer: https://lara-assistant.com', // domínio
-            'X-Title: Lara Assistant' // aplicação
+            'Authorization: Bearer ' . $this->apiKey
         ]);
 
         // Executar a requisição
