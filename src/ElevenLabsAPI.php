@@ -1,5 +1,4 @@
 <?php
-// src/ElevenLabsAPI.php - Integração com a API do ElevenLabs
 
 class ElevenLabsAPI
 {

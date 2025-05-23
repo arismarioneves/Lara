@@ -1,5 +1,3 @@
-// public/js/main.js - Lógica do cliente para o agente Lara
-
 document.addEventListener('DOMContentLoaded', function () {
     // Elementos da interface
     const startButton = document.getElementById('start-button');

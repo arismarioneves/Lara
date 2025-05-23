@@ -1,5 +1,4 @@
 <?php
-// src/SpeechRecognition.php - Reconhecimento de fala
 
 class SpeechRecognition
 {

@@ -1,5 +1,4 @@
 <?php
-// diagnostics.php - Verificar configurações do servidor e permissões
 
 // Desativar exibição de erros para produção
 ini_set('display_errors', 1);

@@ -1,5 +1,4 @@
 <?php
-// src/ConversationManager.php - Gerenciamento do contexto da conversa
 
 class ConversationManager
 {

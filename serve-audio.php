@@ -1,5 +1,4 @@
 <?php
-// serve-audio.php - Script específico para servir arquivos de áudio
 
 // Obter o nome do arquivo da URL
 $filename = isset($_GET['file']) ? $_GET['file'] : '';
