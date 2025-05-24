@@ -1,5 +1,4 @@
 <?php
-// test-audio.php - Teste de geração e acesso a arquivos de áudio
 
 // Incluir arquivo de configuração
 require_once 'config.php';

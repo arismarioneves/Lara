@@ -1,18 +1,40 @@
 <?php
 
-// Constantes para as chaves de API
+// OpenRouter
 define('OPENROUTER_API_KEY', '');
 define('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001');
+
+// TTS
+define('TTS_PROVIDER', 'openai'); // 'elevenlabs' ou 'openai'
+
+// OpenAI
+define('OPENAI_API_KEY', ''); // Chave da OpenAI
+define('OPENAI_TTS_MODEL', 'gpt-4o-mini-tts');
+define('OPENAI_TTS_VOICE', 'coral'); // alloy, echo, fable, onyx, nova, shimmer
+define('OPENAI_TTS_INSTRUCTIONS', 'Affect/personality: A cheerful guide
+
+Tone: Friendly, clear, and reassuring, creating a calm atmosphere and making the listener feel confident and comfortable.
+
+Pronunciation: Clear, articulate, and steady, ensuring each instruction is easily understood while maintaining a natural, conversational flow.
+
+Pause: Brief, purposeful pauses after key instructions (e.g., "cross the street" and "turn right") to allow time for the listener to process the information and follow along.
+
+Emotion: Warm and supportive, conveying empathy and care, ensuring the listener feels guided and safe throughout the journey.
+
+Voice: Warm, empathetic, and professional, reassuring the customer that their issue is understood and will be resolved.
+
+Punctuation: Well-structured with natural pauses, allowing for clarity and a steady, calming flow.
+
+Delivery: Calm and patient, with a supportive and understanding tone that reassures the listener.
+
+Phrasing: Clear and concise, using customer-friendly language that avoids jargon while maintaining professionalism.');
+
+// ElevenLabs
 define('ELEVEN_LABS_API_KEY', '');
-
-// Configurações adicionais
-// define('ELEVEN_LABS_VOICE_ID', 'NQ10OlqJ7vYH6XwegHSW'); // Lucke
 define('ELEVEN_LABS_VOICE_ID', 'lWq4KDY8znfkV0DrK8Vb'); // Yasmin Alves
-define('DEBUG_MODE', false);
 
-// Configuração de nome da assistente
+// Assistente
 define('ASSISTANT_NAME', 'Lara');
-
 define('ASSISTANT_PROMPT', 'Você é Lara, uma assistente virtual amigável e prestativa. Responda de forma concisa, breve e natural, como em uma conversa. Simule um tom de voz humano, amigável e natural.
 
 Evite respostas longas ou excessivamente técnicas.
@@ -37,10 +59,5 @@ Informações relacionadas ao mundo do usuário:
 Hora: ' . date('Y-m-d H:i:s') . ';
 Usuário: Arismário.');
 
-// Configuração do tempo de escuta contínua (em segundos)
-define('CONTINUOUS_LISTENING_DURATION', 120); // 2 minutos por padrão
-
-// Verificar se as chaves de API estão configuradas
-if (empty(OPENROUTER_API_KEY) || empty(ELEVEN_LABS_API_KEY)) {
-    error_log('ERRO: Chaves de API não configuradas.');
-}
+// Tempo de escuta contínua (em segundos)
+define('CONTINUOUS_LISTENING_DURATION', 600); // 10 minutos por padrão

@@ -14,21 +14,12 @@ class ElevenLabsAPI
      * Gera áudio a partir do texto usando ElevenLabs
      *
      * @param string $text Texto para converter em fala
-     * @param string $voiceId ID da voz a ser usada (opcional)
      * @return string URL do arquivo de áudio gerado ou URL de áudio base64
      */
-    public function generateSpeech($text, $voiceId = null)
+    public function generateSpeech($text)
     {
-        // Usar o ID de voz padrão se não for especificado
-        if ($voiceId === null) {
-            $voiceId = ELEVEN_LABS_VOICE_ID;
-        }
-
         // Diretório para salvar os arquivos de áudio
         $audioDir = __DIR__ . '/../public/audio';
-        if (!file_exists($audioDir)) {
-            mkdir($audioDir, 0755, true);
-        }
 
         // Nome do arquivo baseado em hash do texto e timestamp
         $filename = md5($text . time()) . '.mp3';
@@ -49,7 +40,7 @@ class ElevenLabsAPI
 
         // Configurar a requisição cURL
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->apiEndpoint . '/' . $voiceId);
+        curl_setopt($ch, CURLOPT_URL, $this->apiEndpoint . '/' . ELEVEN_LABS_VOICE_ID);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));

@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let continuousListeningEndTime = null;
     let continuousListeningTimer = null;
 
-    // Configuração de tempo de escuta contínua (padrão: 120 segundos = 2 minutos)
-    const continuousListeningDuration = window.appConfig?.continuousListeningDuration || 120;
+    // Configuração de tempo de escuta contínua (padrão: 600 segundos = 10 minutos)
+    const continuousListeningDuration = window.appConfig?.continuousListeningDuration || 600;
 
     // Função para processar entrada de texto manual
     function handleTextInput() {

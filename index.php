@@ -35,6 +35,7 @@ require_once 'config.php';
 require_once 'src/SpeechRecognition.php';
 require_once 'src/OpenRouterAPI.php';
 require_once 'src/ElevenLabsAPI.php';
+require_once 'src/OpenAITTS.php';
 require_once 'src/ConversationManager.php';
 
 // Iniciar sessão para manter o contexto da conversa
@@ -83,9 +84,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Atualizar o contexto com a nova interação
                 $conversationManager->updateContext($userInput, $response);
 
-                // Gerar áudio da resposta usando ElevenLabs
-                $elevenLabs = new ElevenLabsAPI(ELEVEN_LABS_API_KEY);
-                $audioUrl = $elevenLabs->generateSpeech($response);
+                // Gerar áudio da resposta usando o TTS configurado
+                $audioUrl = null;
+                if (TTS_PROVIDER === 'elevenlabs') {
+                    $elevenLabs = new ElevenLabsAPI(ELEVEN_LABS_API_KEY);
+                    $audioUrl = $elevenLabs->generateSpeech($response);
+                } elseif (TTS_PROVIDER === 'openai') {
+                    $openaiTTS = new OpenAITTS(OPENAI_API_KEY, OPENAI_TTS_MODEL, OPENAI_TTS_VOICE, OPENAI_TTS_INSTRUCTIONS);
+                    $audioUrl = $openaiTTS->generateSpeech($response);
+                }
 
                 echo json_encode([
                     'status' => 'success',
@@ -173,7 +180,7 @@ $jsVersion = filemtime(__DIR__ . '/public/js/main.js');
             <div class="controls">
                 <button id="start-button" class="primary-button">Iniciar</button>
                 <button id="stop-button" class="secondary-button" disabled>Parar</button>
-                <!-- <button id="clear-button" class="tertiary-button">Limpar</button> -->
+                <button id="clear-button" class="tertiary-button">Limpar</button>
             </div>
 
             <div class="text-input-container">
@@ -188,13 +195,6 @@ $jsVersion = filemtime(__DIR__ . '/public/js/main.js');
     </div>
 
     <script src="public/js/main.js?v=<?= $jsVersion; ?>"></script>
-
-    <script>
-        // Configurações do servidor
-        const appConfig = {
-            continuousListeningDuration: <?= CONTINUOUS_LISTENING_DURATION; ?>
-        };
-    </script>
 </body>
 
 </html>
