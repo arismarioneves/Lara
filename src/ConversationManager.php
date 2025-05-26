@@ -2,7 +2,7 @@
 
 class ConversationManager
 {
-    private $maxContextLength = 10; // Número máximo de trocas para manter no contexto
+    private $maxContextLength = 100; // Número máximo de trocas para manter no contexto
 
     /**
      * Obtém o contexto atual da conversa da sessão

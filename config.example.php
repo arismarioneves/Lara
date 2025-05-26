@@ -58,6 +58,3 @@ E lembre-se, quando não precisar responder, responda apenas com a palavra "off"
 Informações relacionadas ao mundo do usuário:
 Hora: ' . date('Y-m-d H:i:s') . ';
 Usuário: Arismário.');
-
-// Tempo de escuta contínua (em segundos)
-define('CONTINUOUS_LISTENING_DURATION', 600); // 10 minutos por padrão
