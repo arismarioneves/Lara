@@ -72,6 +72,12 @@ header h1 {
     animation: pulse 1.5s ease-in-out infinite;
 }
 
+.status-indicator.speaking {
+    background: linear-gradient(135deg, #00d4aa, #00a86b);
+    box-shadow: 0 0 40px rgba(0, 212, 170, 0.4);
+    animation: speaking 1s ease-in-out infinite;
+}
+
 .status-indicator.error {
     background: linear-gradient(135deg, #ff453a, #d70015);
     box-shadow: 0 0 40px rgba(255, 69, 58, 0.4);
@@ -100,6 +106,30 @@ header h1 {
 
     50% {
         transform: scale(1.08);
+    }
+}
+
+@keyframes speaking {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 40px rgba(0, 212, 170, 0.4);
+    }
+
+    25% {
+        transform: scale(1.02);
+        box-shadow: 0 0 45px rgba(0, 212, 170, 0.6);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 50px rgba(0, 212, 170, 0.8);
+    }
+
+    75% {
+        transform: scale(1.02);
+        box-shadow: 0 0 45px rgba(0, 212, 170, 0.6);
     }
 }
 

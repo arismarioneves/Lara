@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let isListening = false;
     let recognition = null;
     let recognitionActive = false;
+    let isPlayingAudio = false; // Controlar quando áudio está sendo reproduzido
+    let shouldResumeListening = false; // Saber se deve retomar a escuta após o áudio
 
     // Estado de escuta contínua
     let continuousListeningMode = false;
@@ -206,10 +208,48 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Pausar reconhecimento de voz temporariamente
+    function pauseRecognition() {
+        if (recognition && recognitionActive) {
+            try {
+                shouldResumeListening = true;
+                recognition.stop();
+                recognitionActive = false;
+                console.log("Reconhecimento pausado temporariamente");
+            } catch (error) {
+                console.error("Erro ao pausar reconhecimento:", error);
+            }
+        }
+    }
+
+    // Retomar reconhecimento de voz após pausa
+    function resumeRecognition() {
+        if (isListening && shouldResumeListening && !isPlayingAudio) {
+            shouldResumeListening = false;
+            setTimeout(() => {
+                safeStartRecognition();
+                // Atualizar status quando retomar a escuta
+                if (continuousListeningMode) {
+                    const remainingTime = formatRemainingTime();
+                    updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+                } else {
+                    updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                }
+            }, 500); // Pequena pausa antes de retomar
+        }
+    }
+
     // Iniciar o reconhecimento com segurança
     function safeStartRecognition() {
         if (!recognition) {
             console.error("Reconhecimento não inicializado");
+            return;
+        }
+
+        // Não iniciar se áudio estiver sendo reproduzido
+        if (isPlayingAudio) {
+            console.log("Áudio sendo reproduzido, não iniciando reconhecimento");
+            shouldResumeListening = true;
             return;
         }
 
@@ -276,6 +316,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Parar a escuta
     function stopListening() {
         isListening = false;
+        shouldResumeListening = false; // Resetar flag de retomada
 
         // Desativar modo de escuta contínua se estiver ativo
         if (continuousListeningMode) {
@@ -357,17 +398,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         playAudio(data.audio_url);
                     }
 
-                    updateStatus('active', 'Lara está respondendo...');
-                    setTimeout(() => {
-                        if (isListening) {
-                            if (continuousListeningMode) {
-                                const remainingTime = formatRemainingTime();
-                                updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
-                            } else {
-                                updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                    // Atualizar status durante reprodução
+                    if (data.audio_url) {
+                        updateStatus('speaking', 'Lara está falando...');
+                    } else {
+                        updateStatus('active', 'Lara está respondendo...');
+                        // Se não há áudio, atualizar status após um tempo
+                        setTimeout(() => {
+                            if (isListening && !isPlayingAudio) {
+                                if (continuousListeningMode) {
+                                    const remainingTime = formatRemainingTime();
+                                    updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+                                } else {
+                                    updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                                }
                             }
-                        }
-                    }, 2000);
+                        }, 2000);
+                    }
                 } else if (data.status === 'off') {
                     // Não fazer nada quando a resposta for "off"
                     console.log("Assistente está apenas escutando (resposta 'off')");
@@ -450,6 +497,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Pausar reconhecimento de voz antes de reproduzir áudio
+        isPlayingAudio = true;
+        pauseRecognition();
+
         // Verificar se a URL é uma URL de dados (data URL)
         const isDataUrl = url.startsWith('data:audio');
 
@@ -464,9 +515,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const audio = new Audio();
 
+        // Função para finalizar reprodução e retomar reconhecimento
+        function finishAudioPlayback() {
+            isPlayingAudio = false;
+            console.log("Reprodução de áudio finalizada, retomando reconhecimento");
+            resumeRecognition();
+        }
+
         // Adicionar tratamento de erros
         audio.onerror = function (e) {
             console.error("Erro ao reproduzir áudio:", e);
+            finishAudioPlayback(); // Retomar reconhecimento mesmo em caso de erro
+
             // Tentar reproduzir como fallback um áudio silencioso
             if (!isDataUrl) {
                 console.log("Tentando reproduzir áudio silencioso como fallback");
@@ -480,12 +540,21 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log("Áudio pronto para reprodução");
         };
 
+        // Evento quando o áudio terminar de ser reproduzido
+        audio.onended = function () {
+            console.log("Áudio terminou de ser reproduzido");
+            finishAudioPlayback();
+        };
+
         // Definir a fonte do áudio
         audio.src = url;
 
         // Tentar reproduzir o áudio
-        audio.play().catch(error => {
+        audio.play().then(() => {
+            console.log("Áudio iniciado com sucesso");
+        }).catch(error => {
             console.error("Erro na reprodução do áudio:", error);
+            finishAudioPlayback(); // Retomar reconhecimento mesmo se não conseguir reproduzir
 
             // Se for um problema de interação do usuário, informar
             if (error.name === 'NotAllowedError') {
@@ -496,8 +565,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 playButton.textContent = "Reproduzir resposta em áudio";
                 playButton.className = "audio-play-button";
                 playButton.onclick = function () {
-                    audio.play();
-                    this.remove();
+                    // Pausar novamente o reconhecimento quando o usuário clicar para reproduzir
+                    isPlayingAudio = true;
+                    pauseRecognition();
+
+                    audio.play().then(() => {
+                        console.log("Áudio iniciado manualmente com sucesso");
+                        this.remove();
+                    }).catch(err => {
+                        console.error("Erro ao reproduzir áudio manualmente:", err);
+                        finishAudioPlayback();
+                        this.remove();
+                    });
                 };
 
                 // Adicionar o botão ao log de conversa
