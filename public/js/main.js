@@ -30,10 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleTextInput() {
         const text = textInput.value.trim();
         if (text) {
-            // Adicionar ao log de conversa
-            addToConversationLog('user', text);
-
-            // Processar o texto
+            // Processar o texto (a mensagem será adicionada ao log baseada na resposta)
             processUserInput(text);
 
             // Limpar o campo
@@ -75,16 +72,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             console.log("Fala reconhecida:", transcript);
 
-            // Adicionar texto reconhecido ao log
-            addToConversationLog('user', transcript);
-
             // Verificar se o nome "Lara" foi mencionado
             if (transcript.toLowerCase().includes('lara') && !continuousListeningMode) {
                 // Ativar modo de escuta contínua
                 activateContinuousListening();
             }
 
-            // Enviar para processamento no servidor
+            // Enviar para processamento no servidor (a mensagem será adicionada ao log baseada na resposta)
             processUserInput(transcript);
         };
 
@@ -390,6 +384,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
+                    // Adicionar mensagem do usuário ao log (contextualizada e respondida - cor azul)
+                    addToConversationLog('user', text, 'normal');
+
                     // Adicionar resposta ao log
                     addToConversationLog('assistant', data.response);
 
@@ -416,10 +413,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         }, 2000);
                     }
                 } else if (data.status === 'off') {
-                    // Não fazer nada quando a resposta for "off"
+                    // Adicionar mensagem do usuário ao log (contextualizada mas não respondida - cor cinza)
+                    addToConversationLog('user', text, 'listening-only');
+
                     console.log("Assistente está apenas escutando (resposta 'off')");
 
-                    // Opcionalmente, podemos atualizar o status para indicar que a assistente está escutando
+                    // Atualizar o status para indicar que a assistente está escutando
                     if (isListening) {
                         if (continuousListeningMode) {
                             const remainingTime = formatRemainingTime();
@@ -429,12 +428,17 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 } else if (data.status === 'waiting' && !continuousListeningMode) {
+                    // Adicionar mensagem do usuário ao log (NÃO contextualizada - cor vermelha)
+                    addToConversationLog('user', text, 'not-contextualized');
+
                     // Se não estiver em modo de escuta contínua, mostrar mensagem de espera
                     console.log("Aguardando ser chamada pelo nome");
                 }
             })
             .catch(error => {
                 console.error('Erro ao processar texto:', error);
+                // Em caso de erro, adicionar a mensagem como não contextualizada
+                addToConversationLog('user', text, 'not-contextualized');
             });
     }
 
@@ -458,9 +462,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Adicionar mensagem ao log de conversa
-    function addToConversationLog(role, text) {
+    function addToConversationLog(role, text, messageType = 'normal') {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${role}-message`;
+        let className = `message ${role}-message`;
+
+        // Adicionar classes especiais baseadas no tipo de mensagem
+        if (role === 'user') {
+            if (messageType === 'not-contextualized') {
+                className += ' not-contextualized'; // Vermelho - não vai para contexto
+            } else if (messageType === 'listening-only') {
+                className += ' listening-only'; // Cinza - vai para contexto mas não responde
+            }
+            // messageType === 'normal' fica com cor azul padrão
+        }
+
+        messageDiv.className = className;
 
         const contentP = document.createElement('p');
         contentP.textContent = text;

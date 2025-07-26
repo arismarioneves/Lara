@@ -212,6 +212,20 @@ header h1 {
     border-bottom-right-radius: 3px;
 }
 
+.user-message.not-contextualized {
+    background: #ff3b30;
+    color: #fff;
+    opacity: 0.9;
+    border: 1px solid #ff453a;
+}
+
+.user-message.listening-only {
+    background: #666;
+    color: #fff;
+    opacity: 0.8;
+    border: 1px solid #777;
+}
+
 .assistant-message {
     background: #1a1a1a;
     color: #e6e6e6;
