@@ -12,19 +12,62 @@ document.addEventListener('DOMContentLoaded', function () {
     const sendButton = document.getElementById('send-button');
 
     // Estado da aplicação
-    let isListening = false;
-    let recognition = null;
-    let recognitionActive = false;
+    let isListening = false; // Controlar se está escutando
+    let recognition = null; // Instância do reconhecimento de fala
+    let recognitionActive = false; // Controlar se o reconhecimento está ativo
     let isPlayingAudio = false; // Controlar quando áudio está sendo reproduzido
     let shouldResumeListening = false; // Saber se deve retomar a escuta após o áudio
+    let recognitionStarting = false; // Mutex para evitar múltiplas inicializações simultâneas
+    let microphonePermission = null; // Cache do status de permissão do microfone
 
     // Estado de escuta contínua
     let continuousListeningMode = false;
     let continuousListeningEndTime = null;
     let continuousListeningTimer = null;
 
+    // Estado do scroll dinâmico
+    let userScrolledUp = false; // Detecta se usuário fez scroll para cima
+    let lastScrollTime = 0; // Timestamp do último scroll manual
+    let unreadMessages = 0; // Contador de mensagens não lidas
+    let scrollTimeout = null; // Timeout para detectar fim do scroll manual
+    let newMessageButton = null; // Botão para mostrar novas mensagens
+
     // Configuração de tempo de escuta contínua (padrão: 600 segundos = 10 minutos)
     const continuousListeningDuration = window.appConfig?.continuousListeningDuration || 600;
+
+    // Verificar permissões do microfone
+    async function checkMicrophonePermission() {
+        try {
+            if (navigator.permissions) {
+                const result = await navigator.permissions.query({ name: 'microphone' });
+                microphonePermission = result.state;
+                console.log('Permissão do microfone:', result.state);
+
+                // Escutar mudanças na permissão
+                result.onchange = function() {
+                    microphonePermission = this.state;
+                    console.log('Permissão do microfone alterada para:', this.state);
+
+                    if (this.state === 'denied' && isListening) {
+                        stopListening();
+                        updateStatus('error', 'Permissão do microfone foi negada');
+                    }
+                };
+
+                return result.state === 'granted';
+            }
+
+            // Fallback: tentar acessar o microfone diretamente
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+            microphonePermission = 'granted';
+            return true;
+        } catch (error) {
+            console.error('Erro ao verificar permissão do microfone:', error);
+            microphonePermission = 'denied';
+            return false;
+        }
+    }
 
     // Função para processar entrada de texto manual
     function handleTextInput() {
@@ -106,38 +149,63 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Marcar como não ativo
             recognitionActive = false;
+            recognitionStarting = false;
 
             // Tratamento específico para cada tipo de erro
-            if (event.error === 'no-speech') {
+            if (event.error === 'audio-capture') {
+                console.log('Erro de captura de áudio - pode haver conflito com microfone');
+                updateStatus('error', 'Problema no acesso ao microfone');
+
+                // Aguardar mais tempo antes de tentar novamente
+                if (isListening && !isPlayingAudio) {
+                    setTimeout(async () => {
+                        // Verificar permissões antes de tentar novamente
+                        const hasPermission = await checkMicrophonePermission();
+                        if (hasPermission) {
+                            console.log('Tentando reiniciar após erro de audio-capture...');
+                            safeStartRecognition();
+                        } else {
+                            updateStatus('error', 'Permissão de microfone necessária');
+                            stopListening();
+                        }
+                    }, 3000);
+                }
+            } else if (event.error === 'no-speech') {
                 console.log('Nenhuma fala detectada, reiniciando...');
                 if (isListening && !isPlayingAudio) {
-                    setTimeout(() => {
-                        safeStartRecognition();
+                    setTimeout(async () => {
+                        await safeStartRecognition();
                     }, 500);
                 }
             } else if (event.error === 'aborted') {
                 console.log('Reconhecimento abortado, reiniciando...');
                 if (isListening && !isPlayingAudio) {
-                    setTimeout(() => {
-                        safeStartRecognition();
+                    setTimeout(async () => {
+                        await safeStartRecognition();
                     }, 300);
                 }
             } else if (event.error === 'network') {
                 console.log('Erro de rede no reconhecimento, tentando novamente...');
                 updateStatus('error', 'Problema de conexão');
                 if (isListening) {
-                    setTimeout(() => {
-                        safeStartRecognition();
+                    setTimeout(async () => {
+                        await safeStartRecognition();
                     }, 2000);
                 }
             } else if (event.error === 'not-allowed') {
+                console.log('Permissão negada pelo navegador');
                 updateStatus('error', 'Permissão de microfone negada');
+                microphonePermission = 'denied';
+                stopListening();
+            } else if (event.error === 'service-not-allowed') {
+                console.log('Serviço de reconhecimento não permitido');
+                updateStatus('error', 'Serviço bloqueado pelo navegador');
                 stopListening();
             } else {
                 console.log(`Erro ${event.error}, reiniciando...`);
                 if (isListening && !isPlayingAudio) {
-                    setTimeout(() => {
-                        safeStartRecognition();
+                    setTimeout(async () => {
+                        await safeStartRecognition();
                     }, 1000);
                 }
             }
@@ -149,11 +217,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Marcar como não ativo
             recognitionActive = false;
+            recognitionStarting = false;
 
             // Reiniciar o reconhecimento se estiver em modo de escuta e não reproduzindo áudio
             if (isListening && !isPlayingAudio) {
-                setTimeout(() => {
-                    safeStartRecognition();
+                setTimeout(async () => {
+                    await safeStartRecognition();
                 }, 300);
             } else if (isListening && isPlayingAudio) {
                 console.log("Áudio sendo reproduzido, aguardando para reiniciar reconhecimento");
@@ -260,98 +329,186 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Retomar reconhecimento de voz após pausa
-    function resumeRecognition() {
+    async function resumeRecognition() {
         if (isListening && shouldResumeListening && !isPlayingAudio) {
             shouldResumeListening = false;
-            setTimeout(() => {
-                safeStartRecognition();
-                // Atualizar status quando retomar a escuta
-                if (continuousListeningMode) {
-                    const remainingTime = formatRemainingTime();
-                    updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+
+            setTimeout(async () => {
+                const started = await safeStartRecognition();
+
+                if (started) {
+                    // Atualizar status quando retomar a escuta
+                    if (continuousListeningMode) {
+                        const remainingTime = formatRemainingTime();
+                        updateStatus('active', `Modo de escuta contínua ativo (${remainingTime})`);
+                    } else {
+                        updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                    }
                 } else {
-                    updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+                    console.log("Não foi possível retomar o reconhecimento");
+                    updateStatus('error', 'Erro ao retomar reconhecimento');
                 }
             }, 500); // Pequena pausa antes de retomar
         }
     }
 
     // Iniciar o reconhecimento com segurança
-    function safeStartRecognition() {
+    async function safeStartRecognition() {
+        // Verificações de segurança
         if (!recognition) {
             console.error("Reconhecimento não inicializado");
-            return;
+            return false;
+        }
+
+        // Verificar se já está iniciando (mutex)
+        if (recognitionStarting) {
+            console.log("Reconhecimento já está sendo iniciado, aguardando...");
+            return false;
+        }
+
+        // Verificar se já está ativo
+        if (recognitionActive) {
+            console.log("Reconhecimento já está ativo, ignorando chamada para iniciar");
+            return false;
         }
 
         // Não iniciar se áudio estiver sendo reproduzido
         if (isPlayingAudio) {
             console.log("Áudio sendo reproduzido, não iniciando reconhecimento");
             shouldResumeListening = true;
-            return;
+            return false;
         }
 
-        // Só iniciar se não estiver ativo
-        if (!recognitionActive) {
-            try {
-                recognition.start();
-                recognitionActive = true;
-                console.log("Reconhecimento iniciado com sucesso");
-            } catch (error) {
-                console.error("Erro ao iniciar reconhecimento:", error);
-                // Em caso de erro, marcar como não ativo
-                recognitionActive = false;
+        // Verificar permissões do microfone
+        if (microphonePermission === 'denied') {
+            console.log("Permissão do microfone negada, não iniciando");
+            updateStatus('error', 'Permissão de microfone necessária');
+            return false;
+        }
+
+        // Definir mutex para evitar inicializações simultâneas
+        recognitionStarting = true;
+
+        try {
+            // Verificar permissão se ainda não foi verificada
+            if (microphonePermission !== 'granted') {
+                console.log("Verificando permissões do microfone...");
+                const hasPermission = await checkMicrophonePermission();
+                if (!hasPermission) {
+                    recognitionStarting = false;
+                    updateStatus('error', 'Permissão de microfone necessária');
+                    return false;
+                }
             }
-        } else {
-            console.log("Reconhecimento já está ativo, ignorando chamada para iniciar");
+
+            console.log("Iniciando reconhecimento de voz...");
+            recognition.start();
+            recognitionActive = true;
+            recognitionStarting = false;
+            console.log("Reconhecimento iniciado com sucesso");
+            return true;
+        } catch (error) {
+            console.error("Erro ao iniciar reconhecimento:", error);
+            recognitionActive = false;
+            recognitionStarting = false;
+
+            // Tratamento específico para erros comuns
+            if (error.name === 'InvalidStateError') {
+                console.log("Estado inválido - pode haver outra instância ativa");
+                // Aguardar um pouco e tentar novamente
+                setTimeout(() => {
+                    if (isListening && !isPlayingAudio) {
+                        safeStartRecognition();
+                    }
+                }, 1000);
+            }
+
+            return false;
         }
     }
 
     // Iniciar a escuta
-    function startListening() {
-        if (!recognition && !setupSpeechRecognition()) {
-            return;
-        }
-
+    async function startListening() {
         try {
-            // Parar qualquer instância anterior
-            if (recognitionActive) {
+            // Verificar permissões primeiro
+            updateStatus('loading', 'Verificando permissões...');
+            const hasPermission = await checkMicrophonePermission();
+
+            if (!hasPermission) {
+                updateStatus('error', 'Permissão de microfone necessária');
+                return;
+            }
+
+            // Configurar reconhecimento se necessário
+            if (!recognition && !setupSpeechRecognition()) {
+                updateStatus('error', 'Navegador não suporta reconhecimento de voz');
+                return;
+            }
+
+            // Parar qualquer instância anterior de forma mais segura
+            if (recognitionActive || recognitionStarting) {
+                console.log("Parando instância anterior...");
                 try {
-                    recognition.stop();
-                    // A função onend irá reiniciar o reconhecimento
+                    if (recognition) {
+                        recognition.stop();
+                        recognitionActive = false;
+                        recognitionStarting = false;
+                    }
+                    // Aguardar um pouco para garantir que a instância foi fechada
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 } catch (e) {
-                    console.error("Erro ao parar reconhecimento:", e);
+                    console.error("Erro ao parar reconhecimento anterior:", e);
                     recognitionActive = false;
+                    recognitionStarting = false;
                 }
-            } else {
-                // Iniciar diretamente se não estiver ativo
-                safeStartRecognition();
             }
 
             isListening = true;
-            updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
 
             // Atualizar botões
             startButton.disabled = true;
             stopButton.disabled = false;
 
-            // Notificar o servidor
-            fetch('index.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'action=listen'
-            }).catch(error => {
-                console.error("Erro ao notificar servidor:", error);
-            });
+            // Iniciar reconhecimento
+            updateStatus('listening', 'Iniciando reconhecimento...');
+            const started = await safeStartRecognition();
+
+            if (started) {
+                updateStatus('listening', 'Escutando... Diga "Lara" para ativar');
+
+                // Notificar o servidor
+                fetch('index.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=listen'
+                }).catch(error => {
+                    console.error("Erro ao notificar servidor:", error);
+                });
+            } else {
+                // Se não conseguiu iniciar, reverter estado
+                isListening = false;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+                updateStatus('error', 'Não foi possível iniciar o reconhecimento');
+            }
+
         } catch (error) {
-            console.error('Erro ao configurar reconhecimento:', error);
-            updateStatus('error', 'Falha ao iniciar reconhecimento');
+            console.error('Erro ao iniciar escuta:', error);
+            updateStatus('error', 'Erro ao iniciar reconhecimento');
+
+            // Reverter estado em caso de erro
+            isListening = false;
+            startButton.disabled = false;
+            stopButton.disabled = true;
         }
     }
 
     // Parar a escuta
     function stopListening() {
+        console.log("Parando escuta...");
+
         isListening = false;
         shouldResumeListening = false; // Resetar flag de retomada
 
@@ -360,12 +517,18 @@ document.addEventListener('DOMContentLoaded', function () {
             deactivateContinuousListening();
         }
 
-        if (recognition && recognitionActive) {
+        // Parar reconhecimento de forma mais robusta
+        if (recognition && (recognitionActive || recognitionStarting)) {
             try {
                 recognition.stop();
                 recognitionActive = false;
+                recognitionStarting = false;
+                console.log("Reconhecimento parado com sucesso");
             } catch (error) {
                 console.error("Erro ao parar reconhecimento:", error);
+                // Forçar reset dos estados mesmo com erro
+                recognitionActive = false;
+                recognitionStarting = false;
             }
         }
 
@@ -380,6 +543,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function clearConversation() {
         // Limpar o log visual
         conversationLog.innerHTML = '';
+
+        // Resetar estado do scroll
+        lastScrollTime = 0;
+        unreadMessages = 0;
+        hideNewMessageButton();
 
         // Reiniciar o contexto no servidor
         fetch('index.php', {
@@ -496,12 +664,110 @@ document.addEventListener('DOMContentLoaded', function () {
         return formatDuration(remainingSec);
     }
 
-    // Função para garantir o scroll automático
+        // Verificar se o usuário está no final da conversa
+    function isAtBottom() {
+        const scrollTop = conversationLog.scrollTop;
+        const scrollHeight = conversationLog.scrollHeight;
+        const clientHeight = conversationLog.clientHeight;
+
+        // Considerar no final se estiver a menos de 50px do final
+        const threshold = 50;
+        return scrollTop + clientHeight >= scrollHeight - threshold;
+    }
+
+    // Verificar se deve fazer scroll automático
+    function shouldAutoScroll() {
+        const now = Date.now();
+        const timeSinceLastScroll = now - lastScrollTime;
+
+        // Se não fez scroll manual nos últimos 2 segundos, fazer scroll automático
+        // OU se está no final da conversa
+        return timeSinceLastScroll > 2000 || isAtBottom();
+    }
+
+    // Criar botão de novas mensagens
+    function createNewMessageButton() {
+        if (newMessageButton) return newMessageButton;
+
+        newMessageButton = document.createElement('button');
+        newMessageButton.className = 'new-message-button';
+        newMessageButton.innerHTML = `
+            <span class="message-icon">↓</span>
+            <span class="message-text">Nova mensagem</span>
+        `;
+
+        newMessageButton.onclick = () => {
+            scrollToBottomSmooth();
+            hideNewMessageButton();
+        };
+
+        // Adicionar ao container de conversa
+        const conversationContainer = document.querySelector('.conversation-container');
+        conversationContainer.appendChild(newMessageButton);
+
+        return newMessageButton;
+    }
+
+    // Mostrar botão de novas mensagens
+    function showNewMessageButton() {
+        const button = createNewMessageButton();
+        button.style.display = 'flex';
+
+        // Atualizar contador se houver mensagens não lidas
+        if (unreadMessages > 0) {
+            const messageText = button.querySelector('.message-text');
+            messageText.textContent = unreadMessages === 1
+                ? 'Nova mensagem'
+                : `${unreadMessages} novas mensagens`;
+        }
+    }
+
+    // Esconder botão de novas mensagens
+    function hideNewMessageButton() {
+        if (newMessageButton) {
+            newMessageButton.style.display = 'none';
+            unreadMessages = 0;
+        }
+    }
+
+        // Scroll automático para o final
     function scrollToBottom() {
-        // Usar requestAnimationFrame para garantir que o scroll ocorra após a renderização
         requestAnimationFrame(() => {
             conversationLog.scrollTop = conversationLog.scrollHeight;
         });
+    }
+
+    // Scroll suave para o final (usado pelo botão)
+    function scrollToBottomSmooth() {
+        conversationLog.scrollTo({
+            top: conversationLog.scrollHeight,
+            behavior: 'smooth'
+        });
+
+        // Limpar mensagens não lidas após scroll
+        setTimeout(() => {
+            hideNewMessageButton();
+        }, 500);
+    }
+
+    // Sistema de scroll inteligente simplificado
+    function handleNewMessage() {
+        // Se há poucas mensagens (início da conversa), sempre fazer scroll
+        if (conversationLog.children.length <= 3) {
+            scrollToBottom();
+            hideNewMessageButton();
+            return;
+        }
+
+        // Se deve fazer scroll automático
+        if (shouldAutoScroll()) {
+            scrollToBottom();
+            hideNewMessageButton();
+        } else {
+            // Usuário está lendo mensagens antigas, mostrar botão
+            unreadMessages++;
+            showNewMessageButton();
+        }
     }
 
     // Adicionar mensagem ao log de conversa
@@ -527,8 +793,8 @@ document.addEventListener('DOMContentLoaded', function () {
         messageDiv.appendChild(contentP);
         conversationLog.appendChild(messageDiv);
 
-        // Rolar para a mensagem mais recente
-        scrollToBottom();
+        // Usar sistema de scroll simplificado
+        handleNewMessage();
     }
 
     // Adicionar mensagem do sistema
@@ -542,8 +808,9 @@ document.addEventListener('DOMContentLoaded', function () {
         messageDiv.appendChild(contentP);
         conversationLog.appendChild(messageDiv);
 
-        // Rolar para a mensagem mais recente
+        // Mensagens do sistema sempre fazem scroll (são importantes)
         scrollToBottom();
+        hideNewMessageButton();
     }
 
     // Reproduzir áudio
@@ -663,9 +930,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // Inicializar com status padrão
     updateStatus('idle', 'Aguardando ativação...');
 
-    // Observador de mutações para garantir scroll automático quando novas mensagens são adicionadas
+        // Event listeners para detectar scroll manual do usuário
+    conversationLog.addEventListener('scroll', () => {
+        // Registrar timestamp do scroll manual
+        lastScrollTime = Date.now();
+
+        // Se chegou ao final, esconder botão de novas mensagens
+        if (isAtBottom()) {
+            hideNewMessageButton();
+        }
+    });
+
+    // Observador de mutações para monitorar mudanças
     const conversationObserver = new MutationObserver(() => {
-        scrollToBottom();
+        // Aguardar renderização e verificar se precisa esconder botão
+        setTimeout(() => {
+            if (isAtBottom()) {
+                hideNewMessageButton();
+            }
+        }, 100);
     });
 
     // Iniciar observação do container de conversa
@@ -673,4 +956,11 @@ document.addEventListener('DOMContentLoaded', function () {
         childList: true,
         subtree: true
     });
+
+    // Garantir que primeira mensagem sempre faça scroll
+    setTimeout(() => {
+        if (conversationLog.children.length > 0) {
+            scrollToBottom();
+        }
+    }, 100);
 });
