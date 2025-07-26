@@ -25,8 +25,8 @@ class ElevenLabsAPI
         $filename = md5($text . time()) . '.mp3';
         $filePath = $audioDir . '/' . $filename;
 
-        // Usar o script serve-audio.php para servir o arquivo
-        $fileUrl = 'serve-audio.php?file=' . $filename;
+        // Usar o script audio.php para servir o arquivo
+        $fileUrl = 'audio?file=' . $filename;
 
         // Configurações da voz
         $data = [

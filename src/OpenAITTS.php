@@ -45,8 +45,8 @@ class OpenAITTS
             $filePath = __DIR__ . '/../public/audio/' . $fileName;
             file_put_contents($filePath, $audioContent);
 
-            // Usar o script serve-audio.php para servir o arquivo
-            $fileUrl = 'serve-audio.php?file=' . $fileName;
+            // Usar o script audio.php para servir o arquivo
+            $fileUrl = 'audio?file=' . $fileName;
 
             return $fileUrl;
         } else {

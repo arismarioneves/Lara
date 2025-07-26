@@ -60,26 +60,44 @@ document.addEventListener('DOMContentLoaded', function () {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
 
-        // Configurar opções
+        // Configurar opções para melhor precisão
         recognition.lang = 'pt-BR';
         recognition.continuous = true;
         recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        // Configurações adicionais para melhor precisão
+        if ('webkitSpeechRecognition' in window) {
+            recognition.webkitGrammars = null;
+            recognition.serviceURI = null;
+        }
 
         // Evento quando o reconhecimento retorna resultados
         recognition.onresult = function (event) {
             const result = event.results[event.results.length - 1];
-            const transcript = result[0].transcript.trim();
 
-            console.log("Fala reconhecida:", transcript);
+            // Verificar se o resultado é final e tem boa confiança
+            if (result.isFinal) {
+                const transcript = result[0].transcript.trim();
+                const confidence = result[0].confidence || 1;
 
-            // Verificar se o nome "Lara" foi mencionado
-            if (transcript.toLowerCase().includes('lara') && !continuousListeningMode) {
-                // Ativar modo de escuta contínua
-                activateContinuousListening();
+                console.log("Fala reconhecida:", transcript, "Confiança:", confidence);
+
+                // Filtrar resultados com baixa confiança ou muito curtos
+                if (transcript.length < 2) {
+                    console.log("Texto muito curto, ignorando:", transcript);
+                    return;
+                }
+
+                // Verificar se o nome "Lara" foi mencionado
+                if (transcript.toLowerCase().includes('lara') && !continuousListeningMode) {
+                    // Ativar modo de escuta contínua
+                    activateContinuousListening();
+                }
+
+                // Enviar para processamento no servidor (a mensagem será adicionada ao log baseada na resposta)
+                processUserInput(transcript);
             }
-
-            // Enviar para processamento no servidor (a mensagem será adicionada ao log baseada na resposta)
-            processUserInput(transcript);
         };
 
         // Evento de erro
@@ -90,16 +108,38 @@ document.addEventListener('DOMContentLoaded', function () {
             recognitionActive = false;
 
             // Tratamento específico para cada tipo de erro
-            if (event.error === 'no-speech' || event.error === 'aborted') {
-                console.log(`Reconhecimento ${event.error}, reiniciando...`);
-                // Reiniciar após um pequeno atraso
-                if (isListening) {
+            if (event.error === 'no-speech') {
+                console.log('Nenhuma fala detectada, reiniciando...');
+                if (isListening && !isPlayingAudio) {
+                    setTimeout(() => {
+                        safeStartRecognition();
+                    }, 500);
+                }
+            } else if (event.error === 'aborted') {
+                console.log('Reconhecimento abortado, reiniciando...');
+                if (isListening && !isPlayingAudio) {
                     setTimeout(() => {
                         safeStartRecognition();
                     }, 300);
                 }
+            } else if (event.error === 'network') {
+                console.log('Erro de rede no reconhecimento, tentando novamente...');
+                updateStatus('error', 'Problema de conexão');
+                if (isListening) {
+                    setTimeout(() => {
+                        safeStartRecognition();
+                    }, 2000);
+                }
+            } else if (event.error === 'not-allowed') {
+                updateStatus('error', 'Permissão de microfone negada');
+                stopListening();
             } else {
-                updateStatus('error', `Erro: ${event.error}`);
+                console.log(`Erro ${event.error}, reiniciando...`);
+                if (isListening && !isPlayingAudio) {
+                    setTimeout(() => {
+                        safeStartRecognition();
+                    }, 1000);
+                }
             }
         };
 
@@ -110,11 +150,14 @@ document.addEventListener('DOMContentLoaded', function () {
             // Marcar como não ativo
             recognitionActive = false;
 
-            // Reiniciar o reconhecimento se estiver em modo de escuta
-            if (isListening) {
+            // Reiniciar o reconhecimento se estiver em modo de escuta e não reproduzindo áudio
+            if (isListening && !isPlayingAudio) {
                 setTimeout(() => {
                     safeStartRecognition();
-                }, 200);
+                }, 300);
+            } else if (isListening && isPlayingAudio) {
+                console.log("Áudio sendo reproduzido, aguardando para reiniciar reconhecimento");
+                shouldResumeListening = true;
             }
         };
 

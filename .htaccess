@@ -52,3 +52,8 @@ Options -Indexes
 # Configurar páginas de erro personalizadas
 ErrorDocument 404 /error.php?code=404
 ErrorDocument 500 /error.php?code=500
+
+# Remove a extensão .php das URLs
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+)$ $1.php [L,QSA]

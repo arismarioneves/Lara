@@ -71,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $openRouter = new OpenRouterAPI(OPENROUTER_API_KEY, OPENROUTER_MODEL, ASSISTANT_PROMPT);
                 $response = $openRouter->generateResponse($userInput, $context);
 
+                // SEMPRE atualizar o contexto com a nova interação (mesmo para 'off')
+                $conversationManager->updateContext($userInput, $response);
+
                 // Verificar se a resposta é "off"
                 if (trim(strtolower($response)) === 'off') {
                     // Se for "off", apenas responder com status especial
@@ -80,9 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     exit;
                 }
-
-                // Atualizar o contexto com a nova interação
-                $conversationManager->updateContext($userInput, $response);
 
                 // Gerar áudio da resposta usando o TTS configurado
                 $audioUrl = null;
@@ -164,7 +164,7 @@ $jsVersion = filemtime(__DIR__ . '/public/js/main.js');
     <div class="container">
         <div class="header">
             <h1 class="logo">Lara</h1>
-            <p class="subtitle">AI Assistant</p>
+            <p class="subtitle">Assistente Inteligente</p>
         </div>
 
         <main>
