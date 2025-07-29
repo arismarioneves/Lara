@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let shouldResumeListening = false; // Saber se deve retomar a escuta após o áudio
     let recognitionStarting = false; // Mutex para evitar múltiplas inicializações simultâneas
     let microphonePermission = null; // Cache do status de permissão do microfone
+    let permissionModal = null; // Modal de permissão
 
     // Estado de escuta contínua
     let continuousListeningMode = false;
@@ -34,6 +35,202 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Configuração de tempo de escuta contínua (padrão: 600 segundos = 10 minutos)
     const continuousListeningDuration = window.appConfig?.continuousListeningDuration || 600;
+
+    // Criar modal de permissão do microfone
+    function createPermissionModal() {
+        if (permissionModal) return permissionModal;
+
+        const modal = document.createElement('div');
+        modal.className = 'permission-modal';
+        modal.innerHTML = `
+            <div class="permission-modal-content">
+                <div class="permission-icon">🎤</div>
+                <h3>Permissão do Microfone</h3>
+                <p>Para que a Lara possa ouvir você, precisamos da permissão para acessar o microfone do seu dispositivo.</p>
+                <div class="permission-buttons">
+                    <button class="permission-button primary" id="grant-permission">Permitir Microfone</button>
+                    <button class="permission-button secondary" id="deny-permission">Não Permitir</button>
+                </div>
+                <div class="permission-help">
+                    <ul></ul>
+                    <div class="browser-help">
+                        <p style="font-size: 0.85rem; color: #999; margin-bottom: 8px;"><strong>Como permitir:</strong></p>
+                        <ul style="font-size: 0.8rem; color: #999;">
+                            <li>Clique em "Permitir Microfone"</li>
+                            <li>Quando o navegador solicitar, clique em "Permitir"</li>
+                            <li>Se não aparecer a solicitação, verifique as configurações do seu navegador</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Adicionar estilos inline para garantir que funcione
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        `;
+
+        const content = modal.querySelector('.permission-modal-content');
+        content.style.cssText = `
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        `;
+
+        const icon = modal.querySelector('.permission-icon');
+        icon.style.cssText = `
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        `;
+
+        const title = modal.querySelector('h3');
+        title.style.cssText = `
+            color: #ffffff;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            font-weight: 600;
+        `;
+
+        const description = modal.querySelector('p');
+        description.style.cssText = `
+            color: #cccccc;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        `;
+
+        const buttons = modal.querySelector('.permission-buttons');
+        buttons.style.cssText = `
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        `;
+
+        const primaryBtn = modal.querySelector('#grant-permission');
+        primaryBtn.style.cssText = `
+            background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+
+        const secondaryBtn = modal.querySelector('#deny-permission');
+        secondaryBtn.style.cssText = `
+            background: transparent;
+            color: #888;
+            border: 1px solid #444;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+
+        const help = modal.querySelector('.permission-help');
+        help.style.cssText = `
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        `;
+
+        help.querySelector('p').style.cssText = `
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 8px;
+        `;
+
+        help.querySelector('ul').style.cssText = `
+            color: #cccccc;
+            padding-left: 20px;
+            line-height: 1.4;
+        `;
+
+        help.querySelector('li').style.cssText = `
+            margin-bottom: 4px;
+        `;
+
+        // Eventos dos botões
+        primaryBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+                microphonePermission = 'granted';
+                hidePermissionModal();
+                updateStatus('success', 'Microfone permitido!');
+
+                // Se estava tentando iniciar a escuta, continuar
+                if (startButton.disabled) {
+                    setTimeout(() => {
+                        startListening();
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('Erro ao solicitar permissão:', error);
+                microphonePermission = 'denied';
+
+                // Mostrar mensagem específica baseada no tipo de erro
+                let errorMessage = 'Permissão negada pelo navegador';
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = 'Permissão negada. Verifique as configurações do seu navegador.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = 'Nenhum microfone encontrado. Verifique se o dispositivo está conectado.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage = 'Microfone em uso por outro aplicativo. Feche outros programas que usam áudio.';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage = 'Microfone não suportado. Tente usar outro dispositivo de áudio.';
+                }
+
+                updateStatus('error', errorMessage);
+                hidePermissionModal();
+            }
+        });
+
+        secondaryBtn.addEventListener('click', () => {
+            microphonePermission = 'denied';
+            hidePermissionModal();
+            updateStatus('error', 'Permissão de microfone necessária');
+        });
+
+        document.body.appendChild(modal);
+        permissionModal = modal;
+        return modal;
+    }
+
+    // Mostrar modal de permissão
+    function showPermissionModal() {
+        const modal = createPermissionModal();
+        modal.style.display = 'flex';
+    }
+
+    // Esconder modal de permissão
+    function hidePermissionModal() {
+        if (permissionModal) {
+            permissionModal.style.display = 'none';
+        }
+    }
 
     // Verificar permissões do microfone
     async function checkMicrophonePermission() {
@@ -51,6 +248,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (this.state === 'denied' && isListening) {
                         stopListening();
                         updateStatus('error', 'Permissão do microfone foi negada');
+                    } else if (this.state === 'granted') {
+                        updateStatus('success', 'Microfone permitido!');
+                        // Se estava tentando iniciar a escuta, continuar automaticamente
+                        if (startButton.disabled && !isListening) {
+                            setTimeout(() => {
+                                startListening();
+                            }, 1000);
+                        }
                     }
                 };
 
@@ -67,6 +272,30 @@ document.addEventListener('DOMContentLoaded', function () {
             microphonePermission = 'denied';
             return false;
         }
+    }
+
+    // Solicitar permissão do microfone de forma amigável
+    async function requestMicrophonePermission() {
+        // Se já temos permissão, retornar true
+        if (microphonePermission === 'granted') {
+            return true;
+        }
+
+        // Se a permissão foi negada, mostrar modal explicativo
+        if (microphonePermission === 'denied') {
+            showPermissionModal();
+            return false;
+        }
+
+        // Tentar verificar permissão atual
+        const hasPermission = await checkMicrophonePermission();
+        if (hasPermission) {
+            return true;
+        }
+
+        // Se não tem permissão, mostrar modal
+        showPermissionModal();
+        return false;
     }
 
     // Função para processar entrada de texto manual
@@ -382,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Verificar permissões do microfone
         if (microphonePermission === 'denied') {
             console.log("Permissão do microfone negada, não iniciando");
-            updateStatus('error', 'Permissão de microfone necessária');
+            showPermissionModal();
             return false;
         }
 
@@ -393,10 +622,9 @@ document.addEventListener('DOMContentLoaded', function () {
             // Verificar permissão se ainda não foi verificada
             if (microphonePermission !== 'granted') {
                 console.log("Verificando permissões do microfone...");
-                const hasPermission = await checkMicrophonePermission();
+                const hasPermission = await requestMicrophonePermission();
                 if (!hasPermission) {
                     recognitionStarting = false;
-                    updateStatus('error', 'Permissão de microfone necessária');
                     return false;
                 }
             }
@@ -432,10 +660,11 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             // Verificar permissões primeiro
             updateStatus('loading', 'Verificando permissões...');
-            const hasPermission = await checkMicrophonePermission();
+            const hasPermission = await requestMicrophonePermission();
 
             if (!hasPermission) {
-                updateStatus('error', 'Permissão de microfone necessária');
+                // Se não tem permissão, o modal já foi mostrado
+                // Não atualizar status aqui pois o modal cuida disso
                 return;
             }
 
@@ -927,8 +1156,38 @@ document.addEventListener('DOMContentLoaded', function () {
     stopButton.addEventListener('click', stopListening);
     // clearButton.addEventListener('click', clearConversation);
 
+    // Verificar suporte do navegador na inicialização
+    function checkBrowserSupport() {
+        const supportsSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+        const supportsMediaDevices = 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices;
+        const supportsPermissions = 'permissions' in navigator;
+
+        if (!supportsSpeechRecognition) {
+            updateStatus('error', 'Navegador não suporta reconhecimento de voz');
+            startButton.disabled = true;
+            return false;
+        }
+
+        if (!supportsMediaDevices) {
+            updateStatus('error', 'Navegador não suporta acesso ao microfone');
+            startButton.disabled = true;
+            return false;
+        }
+
+        console.log('Suporte do navegador:', {
+            speechRecognition: supportsSpeechRecognition,
+            mediaDevices: supportsMediaDevices,
+            permissions: supportsPermissions
+        });
+
+        return true;
+    }
+
     // Inicializar com status padrão
     updateStatus('idle', 'Aguardando ativação...');
+
+    // Verificar suporte do navegador
+    checkBrowserSupport();
 
         // Event listeners para detectar scroll manual do usuário
     conversationLog.addEventListener('scroll', () => {

@@ -518,6 +518,127 @@ body {
     transform: translateY(-1px);
 }
 
+/* Modal de permissão do microfone */
+.permission-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+}
+
+.permission-modal-content {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.permission-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.permission-modal h3 {
+    color: #ffffff;
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.permission-modal p {
+    color: #cccccc;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.permission-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.permission-button {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 0.9rem;
+}
+
+.permission-button.primary {
+    background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%);
+    color: white;
+}
+
+.permission-button.primary:hover {
+    background: linear-gradient(135deg, #0056CC 0%, #003D99 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.permission-button.secondary {
+    background: transparent;
+    color: #888;
+    border: 1px solid #444;
+}
+
+.permission-button.secondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border-color: #666;
+}
+
+.permission-help {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.permission-help p {
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.permission-help ul {
+    color: #cccccc;
+    padding-left: 20px;
+    line-height: 1.4;
+}
+
+.permission-help li {
+    margin-bottom: 4px;
+}
+
+/* Status de sucesso para permissão concedida */
+.status-indicator.success {
+    background: linear-gradient(135deg, #34C759 0%, #28A745 100%);
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.success::before {
+    background: linear-gradient(135deg, transparent, rgba(52, 199, 89, 0.3));
+}
+
 footer {
     text-align: center;
     padding-top: 8px;
@@ -596,6 +717,42 @@ footer p {
 
     .new-message-button .message-icon {
         font-size: 0.8rem;
+    }
+
+    /* Modal de permissão em mobile */
+    .permission-modal-content {
+        padding: 24px;
+        max-width: 350px;
+    }
+
+    .permission-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+    }
+
+    .permission-modal h3 {
+        font-size: 1.3rem;
+        margin-bottom: 12px;
+    }
+
+    .permission-modal p {
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+
+    .permission-buttons {
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .permission-button {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+
+    .permission-help {
+        padding: 12px;
+        font-size: 0.85rem;
     }
 }
 
