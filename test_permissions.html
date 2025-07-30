@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Permissões - Lara</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .test-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #ffffff;
+        }
+
+        .test-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .test-section h3 {
+            margin-top: 0;
+            color: #007AFF;
+        }
+
+        .status {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 8px 0;
+        }
+
+        .status.success {
+            background: rgba(52, 199, 89, 0.2);
+            color: #34C759;
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+
+        .status.error {
+            background: rgba(255, 59, 48, 0.2);
+            color: #FF3B30;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .status.warning {
+            background: rgba(255, 149, 0, 0.2);
+            color: #FF9500;
+            border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        button {
+            background: linear-gradient(135deg, #007AFF 0%, #0056CC 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 8px 8px 8px 0;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #0056CC 0%, #003D99 100%);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 2px 0;
+        }
+
+        .log-entry.info { color: #007AFF; }
+        .log-entry.success { color: #34C759; }
+        .log-entry.error { color: #FF3B30; }
+        .log-entry.warning { color: #FF9500; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Teste de Permissões - Lara</h1>
+
+        <div class="test-section">
+            <h3>📱 Suporte do Navegador</h3>
+            <div id="browser-support"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎤 Permissão do Microfone</h3>
+            <div id="microphone-status"></div>
+            <button onclick="testMicrophonePermission()">Testar Permissão</button>
+            <button onclick="requestMicrophonePermission()">Solicitar Permissão</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🗣️ Reconhecimento de Voz</h3>
+            <div id="speech-status"></div>
+            <button onclick="testSpeechRecognition()">Testar Reconhecimento</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 Log de Eventos</h3>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">Limpar Log</button>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logElement.appendChild(entry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Verificar suporte do navegador
+        function checkBrowserSupport() {
+            const supportsSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+            const supportsMediaDevices = 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices;
+            const supportsPermissions = 'permissions' in navigator;
+
+            let status = '';
+            if (supportsSpeechRecognition && supportsMediaDevices) {
+                status = '<div class="status success">✅ Navegador totalmente compatível</div>';
+            } else if (supportsMediaDevices) {
+                status = '<div class="status warning">⚠️ Suporte parcial - microfone disponível</div>';
+            } else {
+                status = '<div class="status error">❌ Navegador não compatível</div>';
+            }
+
+            status += `
+                <div style="margin-top: 8px; font-size: 0.9rem; color: #ccc;">
+                    <div>🎤 MediaDevices: ${supportsMediaDevices ? '✅' : '❌'}</div>
+                    <div>🗣️ SpeechRecognition: ${supportsSpeechRecognition ? '✅' : '❌'}</div>
+                    <div>🔐 Permissions API: ${supportsPermissions ? '✅' : '❌'}</div>
+                </div>
+            `;
+
+            document.getElementById('browser-support').innerHTML = status;
+
+            log(`Suporte do navegador verificado - MediaDevices: ${supportsMediaDevices}, SpeechRecognition: ${supportsSpeechRecognition}, Permissions: ${supportsPermissions}`, 'info');
+        }
+
+        // Testar permissão do microfone
+        async function testMicrophonePermission() {
+            log('Testando permissão do microfone...', 'info');
+
+            try {
+                if (navigator.permissions) {
+                    const result = await navigator.permissions.query({ name: 'microphone' });
+                    updateStatus('microphone-status', `Status: ${result.state}`, result.state === 'granted' ? 'success' : result.state === 'denied' ? 'error' : 'warning');
+                    log(`Permissão do microfone: ${result.state}`, result.state === 'granted' ? 'success' : result.state === 'denied' ? 'error' : 'warning');
+                } else {
+                    updateStatus('microphone-status', 'API de permissões não suportada', 'warning');
+                    log('API de permissões não suportada pelo navegador', 'warning');
+                }
+            } catch (error) {
+                updateStatus('microphone-status', `Erro: ${error.message}`, 'error');
+                log(`Erro ao verificar permissão: ${error.message}`, 'error');
+            }
+        }
+
+        // Solicitar permissão do microfone
+        async function requestMicrophonePermission() {
+            log('Solicitando permissão do microfone...', 'info');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());
+
+                updateStatus('microphone-status', 'Permissão concedida!', 'success');
+                log('Permissão do microfone concedida com sucesso!', 'success');
+
+                // Atualizar status da permissão
+                setTimeout(testMicrophonePermission, 500);
+            } catch (error) {
+                let errorMessage = 'Permissão negada';
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = 'Permissão negada pelo usuário';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = 'Nenhum microfone encontrado';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage = 'Microfone em uso por outro aplicativo';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage = 'Microfone não suportado';
+                }
+
+                updateStatus('microphone-status', `Erro: ${errorMessage}`, 'error');
+                log(`Erro ao solicitar permissão: ${errorMessage} (${error.name})`, 'error');
+            }
+        }
+
+        // Testar reconhecimento de fala
+        function testSpeechRecognition() {
+            log('Testando reconhecimento de fala...', 'info');
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                updateStatus('speech-status', 'Reconhecimento de fala não suportado', 'error');
+                log('Reconhecimento de fala não suportado pelo navegador', 'error');
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                updateStatus('speech-status', 'Reconhecimento iniciado - fale algo...', 'success');
+                log('Reconhecimento de fala iniciado', 'success');
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                updateStatus('speech-status', `Reconhecido: "${transcript}"`, 'success');
+                log(`Texto reconhecido: "${transcript}"`, 'success');
+            };
+
+            recognition.onerror = function(event) {
+                updateStatus('speech-status', `Erro: ${event.error}`, 'error');
+                log(`Erro no reconhecimento: ${event.error}`, 'error');
+            };
+
+            recognition.onend = function() {
+                log('Reconhecimento de fala finalizado', 'info');
+            };
+
+            try {
+                recognition.start();
+            } catch (error) {
+                updateStatus('speech-status', `Erro ao iniciar: ${error.message}`, 'error');
+                log(`Erro ao iniciar reconhecimento: ${error.message}`, 'error');
+            }
+        }
+
+        // Inicializar teste
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Iniciando teste de permissões...', 'info');
+            checkBrowserSupport();
+            testMicrophonePermission();
+        });
+    </script>
+</body>
+</html>
