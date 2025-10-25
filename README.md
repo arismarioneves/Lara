@@ -4,7 +4,7 @@
 
 Lara é uma assistente virtual avançada que combina reconhecimento de fala, processamento de linguagem natural e síntese de voz para criar interações naturais e contextualizadas. Desenvolvida em PHP, ela oferece uma experiência conversacional fluida tanto por voz quanto por texto.
 
-![Interface Lara](docs/screenshot.png)
+<img width="1185" height="673" alt="image" src="https://github.com/user-attachments/assets/60ec2faa-ef52-4057-88df-79ed88c8c6ee" />
 
 ## Características Principais
 
