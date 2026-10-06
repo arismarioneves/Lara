@@ -1,4 +1,14 @@
-public/audio/*
-!public/audio/.gitkeep
+# Segredos e dados locais
 config.php
 .env
+.env.*
+
+# Pasta privada: mantém só a proteção
+/storage/*
+!/storage/.htaccess
+
+# Ferramentas
+/vendor/
+/node_modules/
+.DS_Store
+Thumbs.db

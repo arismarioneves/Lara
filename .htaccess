@@ -1,59 +1,37 @@
-# .htaccess - Configurações para servidor Apache
+# Lara — Apache 2.4
+Options -Indexes
+DirectoryIndex index.php
+AddDefaultCharset utf-8
 
-# Habilitar o mod_rewrite
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType application/wasm .wasm
+</IfModule>
+
+# Código, banco, segredos e dados privados nunca são servidos
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteRule (^|/)\. - [F,L]
+    RewriteRule ^(src|database|bin|storage|tests)(/|$) - [F,L]
 </IfModule>
-
-# Configurações de CORS
-<IfModule mod_headers.c>
-    # Permitir acesso de qualquer origem aos arquivos de áudio
-    <FilesMatch "\.(mp3|wav|ogg)$">
-        Header set Access-Control-Allow-Origin "*"
-        Header set Access-Control-Allow-Methods "GET, OPTIONS"
-        Header set Access-Control-Allow-Headers "Content-Type"
-    </FilesMatch>
-
-    # Configurar cabeçalhos de cache para arquivos estáticos
-    <FilesMatch "\.(css|js|ico|jpg|jpeg|png|gif)$">
-        Header set Cache-Control "max-age=86400, public"
-    </FilesMatch>
-
-    # Não permitir cache para arquivos PHP
-    <FilesMatch "\.(php)$">
-        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
-        Header set Pragma "no-cache"
-    </FilesMatch>
-</IfModule>
-
-# PHP configurações
-<IfModule mod_php.c>
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
-    php_value max_execution_time 60
-    php_value memory_limit 128M
-</IfModule>
-
-# Proteger arquivos e diretórios
+<FilesMatch "^(config(\.example)?\.php|README\.md|LICENSE)$">
+    Require all denied
+</FilesMatch>
 <FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
+    Require all denied
 </FilesMatch>
 
-# Impedir listagem de diretórios
-Options -Indexes
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "same-origin"
+    Header always set X-Frame-Options "DENY"
+    Header always set Permissions-Policy "microphone=(self), camera=(), geolocation=()"
+    <FilesMatch "^sw\.js$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
 
-# Proteger o arquivo .env
-<Files .env>
-    Order allow,deny
-    Deny from all
-</Files>
-
-# Configurar páginas de erro personalizadas
-ErrorDocument 404 /error.php?code=404
-ErrorDocument 500 /error.php?code=500
-
-# Remove a extensão .php das URLs
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}.php -f
-RewriteRule ^(.+)$ $1.php [L,QSA]
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+</IfModule>
