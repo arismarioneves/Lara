@@ -20,6 +20,17 @@ final class Http
         return $data;
     }
 
+    /** @return array<string, mixed>|list<mixed> */
+    public static function getJson(string $url, array $headers = [], int $timeout = 15): array
+    {
+        $raw = self::request($url, $headers, null, $timeout);
+        $data = json_decode($raw['body'], true);
+        if (!is_array($data)) {
+            throw new ProviderException(self::host($url) . ': resposta não-JSON');
+        }
+        return $data;
+    }
+
     /**
      * POST JSON que retorna binário (áudio).
      * @return array{body: string, type: string}
@@ -44,23 +55,26 @@ final class Http
         return $data;
     }
 
-    /** @return array{status: int, body: string, type: string} */
-    private static function request(string $url, array $headers, string|array $payload, int $timeout): array
+    /** @param string|array|null $payload null = GET */
+    private static function request(string $url, array $headers, string|array|null $payload, int $timeout): array
     {
         $ch = curl_init($url);
         $lines = [];
         foreach ($headers as $k => $v) {
             $lines[] = "$k: $v";
         }
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $payload,
+        $opts = [
             CURLOPT_HTTPHEADER => $lines,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_ENCODING => '',
-        ]);
+        ];
+        if ($payload !== null) {
+            $opts[CURLOPT_POST] = true;
+            $opts[CURLOPT_POSTFIELDS] = $payload;
+        }
+        curl_setopt_array($ch, $opts);
         $body = curl_exec($ch);
         $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $type = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);

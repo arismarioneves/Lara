@@ -13,7 +13,8 @@ spl_autoload_register(static function (string $class): void {
 
 use Lara\Config;
 
-Config::load(dirname(__DIR__) . '/config.php');
+// Sem config.php a aplicação sobe com os padrões e só o assistente de instalação funciona
+Config::load();
 date_default_timezone_set(Config::get('app.timezone', 'UTC'));
 ini_set('display_errors', Config::get('app.debug', false) ? '1' : '0');
 error_reporting(E_ALL);

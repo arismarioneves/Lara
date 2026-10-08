@@ -5,6 +5,7 @@ export class Voice extends EventTarget {
     #audio = new Audio();
     #utterance = null;
     settings = {};
+    provider = 'browser'; // 'browser' = speechSynthesis; demais = api/tts.php
 
     get speaking() {
         return this.#busy;
@@ -29,7 +30,7 @@ export class Voice extends EventTarget {
         this.#busy = true;
         this.dispatchEvent(new Event('start'));
         try {
-            if (this.settings.tts_provider === 'browser') {
+            if (this.provider === 'browser') {
                 await this.#browser(reply.text);
             } else {
                 await this.#play(`api/tts.php?id=${encodeURIComponent(reply.id)}`);

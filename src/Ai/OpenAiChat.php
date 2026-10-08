@@ -10,7 +10,8 @@ use Lara\ProviderException;
 /** Qualquer API compatível com /chat/completions (OpenRouter, Groq, OpenAI, Ollama). */
 final class OpenAiChat implements Chat
 {
-    public function __construct(private string $provider, private string $model)
+    /** @param string $thinking nível de raciocínio; aplicado só no OpenRouter (`reasoning.effort`), que o normaliza entre modelos */
+    public function __construct(private string $provider, private string $model, private string $thinking = '')
     {
     }
 
@@ -27,6 +28,9 @@ final class OpenAiChat implements Chat
             $messages[] = ['role' => $t['role'], 'content' => $t['text']];
         }
         $body = ['model' => $this->model, 'messages' => $messages];
+        if ($this->thinking !== '' && $this->provider === 'openrouter') {
+            $body['reasoning'] = ['effort' => $this->thinking];
+        }
         if (!empty($opts['json_schema'])) {
             $body['response_format'] = [
                 'type' => 'json_schema',

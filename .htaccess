@@ -14,7 +14,7 @@ AddDefaultCharset utf-8
     RewriteRule (^|/)\. - [F,L]
     RewriteRule ^(src|database|bin|storage|tests)(/|$) - [F,L]
 </IfModule>
-<FilesMatch "^(config(\.example)?\.php|README\.md|LICENSE)$">
+<FilesMatch "^(config\.php(\.tmp)?|README\.md|LICENSE)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^\.">

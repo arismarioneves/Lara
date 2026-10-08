@@ -4,15 +4,11 @@ declare(strict_types=1);
 namespace Lara;
 
 /**
- * Preferências editáveis pela interface, persistidas na tabela `settings`.
- * Segredos NUNCA ficam aqui (estão em config.php).
+ * Preferências de interação editáveis em Configurações, persistidas na tabela `settings`.
+ * Provedores, chaves e modelos de IA ficam no config.php (assistente de configuração).
  */
 final class Settings
 {
-    public const CHAT_PROVIDERS = ['gemini', 'openrouter', 'groq', 'openai', 'ollama'];
-    public const STT_PROVIDERS = ['gemini', 'groq', 'openai'];
-    public const TTS_PROVIDERS = ['browser', 'gemini', 'openai', 'elevenlabs'];
-
     private const PERSONA = <<<TXT
 Você é a Lara, assistente pessoal por voz que acompanha o usuário o dia inteiro pelo microfone.
 Fale como gente: frases curtas, tom caloroso, natural e direto. Nada de listas, markdown ou emojis — tudo vira voz.
@@ -30,21 +26,11 @@ TXT;
             'persona' => ['type' => 'text', 'default' => self::PERSONA, 'max_len' => 6000],
             'wake_words' => ['type' => 'list', 'default' => ['lara']],
 
-            // IA principal (responde)
-            'main_provider' => ['type' => 'enum', 'default' => 'gemini', 'options' => self::CHAT_PROVIDERS],
-            'main_model' => ['type' => 'string', 'default' => 'gemini-3.8-flash', 'max_len' => 120],
-            'main_thinking' => ['type' => 'enum', 'default' => 'low', 'options' => ['', 'minimal', 'low', 'medium', 'high']],
-
-            // Decisor (RLCD): Jev hospedado ou adaptador Jev-compatível sobre um LLM barato/aberto
-            'decider_engine' => ['type' => 'enum', 'default' => 'jev', 'options' => ['jev', 'llm']],
-            'jev_model' => ['type' => 'string', 'default' => 'jev-latest', 'max_len' => 60],
-            'decider_thinking' => ['type' => 'enum', 'default' => 'minimal', 'options' => ['', 'minimal', 'low', 'medium', 'high']],
-            'decider_provider' => ['type' => 'enum', 'default' => 'gemini', 'options' => self::CHAT_PROVIDERS],
-            'decider_model' => ['type' => 'string', 'default' => 'gemini-3.5-flash-lite', 'max_len' => 120],
+            // Quando responder (política do decisor)
             'respond_threshold' => ['type' => 'float', 'default' => 0.6, 'min' => 0.05, 'max' => 0.99],
             'followup_seconds' => ['type' => 'int', 'default' => 25, 'min' => 0, 'max' => 300],
 
-            // Transcrição: local (Whisper no navegador, custo zero) ou online (maior qualidade)
+            // Transcrição: local (Whisper no navegador, custo zero) ou online (serviço definido no config.php)
             'stt_mode' => ['type' => 'enum', 'default' => 'local', 'options' => ['local', 'online']],
             'stt_local_model' => ['type' => 'enum', 'default' => 'onnx-community/whisper-base', 'options' => [
                 'onnx-community/whisper-tiny',
@@ -52,12 +38,8 @@ TXT;
                 'onnx-community/whisper-small',
                 'onnx-community/whisper-large-v3-turbo',
             ]],
-            'stt_online_provider' => ['type' => 'enum', 'default' => 'gemini', 'options' => self::STT_PROVIDERS],
-            'stt_online_model' => ['type' => 'string', 'default' => 'gemini-3.5-transcribe', 'max_len' => 120],
 
-            // Voz
-            'tts_provider' => ['type' => 'enum', 'default' => 'browser', 'options' => self::TTS_PROVIDERS],
-            'tts_model' => ['type' => 'string', 'default' => '', 'max_len' => 120],
+            // Voz (o provedor e o modelo vêm do config.php)
             'tts_voice' => ['type' => 'string', 'default' => '', 'max_len' => 120],
             'tts_style' => ['type' => 'string', 'default' => 'calorosa, natural, ritmo de conversa', 'max_len' => 300],
 

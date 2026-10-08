@@ -39,16 +39,45 @@ final class Auth
     public static function attempt(string $password): bool
     {
         self::start();
-        $hash = (string)Config::get('app.password_hash', '');
-        // Atraso fixo atenua força bruta sem precisar de tabela de tentativas
-        usleep(400_000);
-        if ($hash === '' || !password_verify($password, $hash)) {
+        if (!self::verify($password)) {
             return false;
         }
+        self::grant();
+        return true;
+    }
+
+    /** Inicia a sessão autenticada (login ou fim da instalação). */
+    public static function grant(): void
+    {
+        self::start();
         session_regenerate_id(true);
         $_SESSION['uid'] = 1;
         $_SESSION['csrf'] = bin2hex(random_bytes(24));
+    }
+
+    /** Reconfirma a senha antes de mexer em chaves de IA; vale por 15 minutos. */
+    public static function confirm(string $password): bool
+    {
+        self::start();
+        if (!self::verify($password)) {
+            return false;
+        }
+        $_SESSION['sudo_until'] = time() + 900;
         return true;
+    }
+
+    public static function sudo(): bool
+    {
+        self::start();
+        return self::check() && ($_SESSION['sudo_until'] ?? 0) > time();
+    }
+
+    private static function verify(string $password): bool
+    {
+        $hash = (string)Config::get('app.password_hash', '');
+        // Atraso fixo atenua força bruta sem precisar de tabela de tentativas
+        usleep(400_000);
+        return $hash !== '' && password_verify($password, $hash);
     }
 
     public static function logout(): void

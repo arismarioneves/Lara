@@ -15,6 +15,7 @@ const listener = new Listener();
 const voice = new Voice();
 const companion = new Companion();
 let settings = {};
+let ai = {}; // resumo da IA do config.php (provedores e modelos)
 let worker = null;
 let workerModel = '';
 let workerSeq = 0;
@@ -36,7 +37,12 @@ function idleState() {
 }
 
 function badge() {
-    $('stt-badge').textContent = settings.stt_mode === 'online' ? 'transcrição online' : 'transcrição local';
+    $('stt-badge').textContent = sttMode() === 'online' ? 'transcrição online' : 'transcrição local';
+}
+
+/** Online só quando escolhido em Configurações E existe serviço configurado no config.php. */
+function sttMode() {
+    return settings.stt_mode === 'online' && ai.stt ? 'online' : 'local';
 }
 
 // ---------- feed ----------
@@ -89,7 +95,7 @@ async function loadHistory() {
 
 // ---------- transcrição local ----------
 function ensureWorker() {
-    if (settings.stt_mode !== 'local') return;
+    if (sttMode() !== 'local') return;
     if (!worker) {
         worker = new Worker(new URL('./whisper.worker.js', import.meta.url), { type: 'module' });
         worker.onerror = () => {
@@ -130,7 +136,7 @@ async function onSegment({ audio, startedAt, endedAt }) {
     // Sem barge-in, o que foi captado enquanto a Lara falava é o eco dela: descarta
     if (!settings.barge_in && startedAt < speakingWindow.to + 400 && endedAt > speakingWindow.from) return;
 
-    const mode = settings.stt_mode; // fixa o modo do trecho: trocar no meio não perde nada
+    const mode = sttMode(); // fixa o modo do trecho: trocar no meio não perde nada
     const tempId = `t${endedAt}`;
     const li = placeholder(tempId);
     inflight++;
@@ -220,7 +226,7 @@ const dialog = $('settings');
 const panel = new SettingsPanel($('settings-body'), {
     onPreview: async () => {
         await saveSettings();
-        if (settings.tts_provider === 'browser') {
+        if (ai.tts_provider === 'browser') {
             voice.say({ id: 0, text: `Oi! Eu sou a ${settings.assistant_name}. É assim que eu falo.` });
             return;
         }
@@ -235,7 +241,9 @@ const panel = new SettingsPanel($('settings-body'), {
 
 function applySettings(data) {
     settings = data.settings;
+    ai = data.ai;
     voice.settings = settings;
+    voice.provider = ai.tts_provider;
     panel.load(data);
     badge();
 }

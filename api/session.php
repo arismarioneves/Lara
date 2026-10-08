@@ -9,6 +9,9 @@ use Lara\Auth;
 /** POST {password} → login · DELETE → logout */
 header('Cache-Control: no-store');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if (!Lara\Config::installed()) {
+    Api::fail(503, 'A Lara ainda não foi configurada');
+}
 
 if ($method === 'POST') {
     $password = (string)(Api::jsonBody()['password'] ?? '');

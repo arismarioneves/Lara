@@ -4,6 +4,12 @@ declare(strict_types=1);
 require __DIR__ . '/src/bootstrap.php';
 
 use Lara\Auth;
+use Lara\Config;
+
+if (!Config::installed()) {
+    header('Location: setup.php');
+    exit;
+}
 
 $authed = Auth::check();
 $csrf = $authed ? Auth::csrf() : '';

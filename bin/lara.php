@@ -22,6 +22,11 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 use Lara\Assistant\Pipeline;
 use Lara\Db;
 
+if (in_array($cmd, ['migrate', 'redecide', 'stats'], true) && !Lara\Config::installed()) {
+    fwrite(STDERR, "config.php não encontrado: abra a Lara no navegador para configurar.\n");
+    exit(1);
+}
+
 switch ($cmd) {
     case 'migrate':
         Db::migrate();

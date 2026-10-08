@@ -1,5 +1,6 @@
 # Segredos e dados locais
 config.php
+config.php.tmp
 .env
 .env.*
 

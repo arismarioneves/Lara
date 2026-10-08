@@ -15,6 +15,9 @@ final class Api
         if (!in_array($method, $methods, true)) {
             self::fail(405, 'Método não permitido');
         }
+        if (!Config::installed()) {
+            self::fail(503, 'A Lara ainda não foi configurada');
+        }
         if (!Auth::check()) {
             self::fail(401, 'Sessão expirada');
         }

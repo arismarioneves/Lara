@@ -1,38 +1,17 @@
-// Tela de configurações gerada a partir das opções do servidor.
+// Tela de configurações: só o que é interação direta. Provedores e modelos de IA ficam em "Reconfigurar IA".
 import { browserVoices } from './voice.js';
 import { listMicrophones } from './listener.js';
 
-const SUGGEST = {
-    chat: {
-        gemini: ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
-    },
-    stt: {
-        gemini: ['gemini-3.5-transcribe', 'gemini-3.5-flash-lite'],
-        groq: ['whisper-large-v3-turbo', 'whisper-large-v3'],
-        openai: ['gpt-4o-mini-transcribe', 'gpt-4o-transcribe', 'whisper-1'],
-    },
-    ttsModel: {
-        gemini: ['gemini-3.8-flash-lite-tts', 'gemini-3.8-flash-tts'],
-        openai: ['gpt-4o-mini-tts'],
-        elevenlabs: ['eleven_flash_v2_5', 'eleven_turbo_v2_5', 'eleven_multilingual_v2'],
-    },
-    ttsVoice: {
-        gemini: ['Kore', 'Aoede', 'Leda', 'Zephyr', 'Sulafat', 'Achernar', 'Despina', 'Callirrhoe', 'Vindemiatrix', 'Laomedeia', 'Puck', 'Charon', 'Fenrir', 'Orus'],
-        openai: ['coral', 'nova', 'shimmer', 'sage', 'alloy', 'ash', 'ballad', 'echo', 'fable', 'onyx', 'verse'],
-    },
-};
-
 const LABELS = {
-    gemini: 'Google Gemini', openrouter: 'OpenRouter', groq: 'Groq', openai: 'OpenAI', ollama: 'Ollama (local)',
-    elevenlabs: 'ElevenLabs', browser: 'Navegador (grátis)', jev: 'TypeSafe Jev (RLCD)', llm: 'Adaptador Jev sobre LLM',
-    local: 'Local (Whisper no aparelho)', online: 'Online (maior qualidade)', '': 'padrão do modelo',
-    minimal: 'mínimo', low: 'baixo', medium: 'médio', high: 'alto',
+    local: 'Local (Whisper no aparelho, grátis)', online: 'Online (maior precisão)',
     'onnx-community/whisper-tiny': 'Whisper tiny (≈40 MB, mais rápido)',
     'onnx-community/whisper-base': 'Whisper base (≈80 MB, equilibrado)',
     'onnx-community/whisper-small': 'Whisper small (≈250 MB, melhor)',
     'onnx-community/whisper-large-v3-turbo': 'Whisper large-v3 turbo (WebGPU, ≈600 MB)',
 };
+const STYLE_PROVIDERS = ['gemini', 'openai', 'openrouter'];
 
+// [chave, rótulo, ajuda, visível?(valores, ia)]
 const SECTIONS = [
     ['Assistente', [
         ['assistant_name', 'Nome da assistente'],
@@ -41,38 +20,20 @@ const SECTIONS = [
         ['language', 'Idioma (BCP-47)'],
         ['persona', 'Personalidade (prompt)'],
     ]],
-    ['IA principal (responde)', [
-        ['main_provider', 'Provedor'],
-        ['main_model', 'Modelo', null, (s) => SUGGEST.chat[s.main_provider]],
-        ['main_thinking', 'Raciocínio', 'Gemini 3.8 Flash não aceita "mínimo".'],
-    ]],
-    ['Decisor RLCD (responder? catalogar?)', [
-        ['decider_engine', 'Motor'],
-        ['jev_model', 'Modelo Jev', null, null, (s) => s.decider_engine === 'jev'],
-        ['decider_provider', 'Provedor do adaptador', null, null, (s) => s.decider_engine === 'llm'],
-        ['decider_model', 'Modelo do adaptador', 'Use um modelo barato/aberto: Flash-Lite, Llama no Groq, Ollama…', (s) => SUGGEST.chat[s.decider_provider], (s) => s.decider_engine === 'llm'],
-        ['decider_thinking', 'Raciocínio do adaptador', null, null, (s) => s.decider_engine === 'llm'],
-        ['respond_threshold', 'Limiar para responder', 'Probabilidade mínima de a fala ser dirigida à Lara.'],
-        ['followup_seconds', 'Janela de continuação (s)', 'Após a Lara falar, réplicas sem o nome dela também são consideradas.'],
-    ]],
-    ['Transcrição', [
-        ['stt_mode', 'Modo', 'Trocar o modo não altera o histórico nem o fluxo; só a qualidade do texto.'],
-        ['stt_local_model', 'Modelo local', 'Baixado uma vez e guardado no navegador.', null, (s) => s.stt_mode === 'local'],
-        ['stt_online_provider', 'Provedor online', null, null, (s) => s.stt_mode === 'online'],
-        ['stt_online_model', 'Modelo online', null, (s) => SUGGEST.stt[s.stt_online_provider], (s) => s.stt_mode === 'online'],
-    ]],
     ['Voz', [
-        ['tts_provider', 'Provedor de voz'],
-        ['tts_model', 'Modelo de voz', 'Vazio = padrão do provedor.', (s) => SUGGEST.ttsModel[s.tts_provider], (s) => s.tts_provider !== 'browser'],
-        ['tts_voice', 'Voz', null, (s) => (s.tts_provider === 'browser'
-            ? browserVoices().filter((v) => v.lang.startsWith((s.language || 'pt').slice(0, 2))).map((v) => v.name)
-            : SUGGEST.ttsVoice[s.tts_provider])],
-        ['tts_style', 'Estilo de fala', null, null, (s) => ['gemini', 'openai'].includes(s.tts_provider)],
+        ['tts_voice', 'Voz'],
+        ['tts_style', 'Estilo de fala', 'Como ela deve soar: ritmo, emoção, tom.', (s, ai) => STYLE_PROVIDERS.includes(ai.tts_provider)],
     ]],
-    ['Captura', [
+    ['Escuta e transcrição', [
+        ['stt_mode', 'Transcrição', 'Trocar não altera o histórico nem o fluxo; só a precisão do texto.'],
+        ['stt_local_model', 'Modelo local', 'Baixado uma vez e guardado no navegador.', (s) => s.stt_mode === 'local'],
         ['vad_threshold', 'Sensibilidade do detector de voz', 'Maior = ignora mais ruído de fundo.'],
         ['barge_in', 'Interromper a Lara falando por cima', 'Ideal com fone de ouvido (sem eco).'],
         ['store_audio', 'Guardar áudio das falas'],
+    ]],
+    ['Quando responder', [
+        ['respond_threshold', 'Limiar para responder', 'Probabilidade mínima de a fala ser dirigida à Lara.'],
+        ['followup_seconds', 'Janela de continuação (s)', 'Após a Lara falar, réplicas sem o nome dela também são consideradas.'],
     ]],
     ['Memória', [
         ['context_messages', 'Falas recentes enviadas à IA'],
@@ -88,13 +49,13 @@ export class SettingsPanel {
         this.onPreview = onPreview;
         this.values = {};
         this.options = {};
-        this.available = [];
+        this.ai = {};
     }
 
-    load({ settings, options, available }) {
+    load({ settings, options, ai }) {
         this.values = { ...settings };
         this.options = options;
-        this.available = available;
+        this.ai = ai;
     }
 
     /** Valores atuais do formulário (somente chaves do servidor). */
@@ -115,26 +76,69 @@ export class SettingsPanel {
         const frag = document.createDocumentFragment();
         for (const [title, fields] of SECTIONS) {
             const fs = document.createElement('fieldset');
-            fs.innerHTML = `<legend>${title}</legend>`;
-            for (const [key, label, help, suggest, visible] of fields) {
-                if (visible && !visible(s)) continue;
-                fs.append(this.#field(key, label, help, suggest?.(s) ?? []));
+            const legend = document.createElement('legend');
+            legend.textContent = title;
+            fs.append(legend);
+            for (const [key, label, help, visible] of fields) {
+                if (visible && !visible(s, this.ai)) continue;
+                fs.append(this.#field(key, label, help));
             }
             if (title === 'Voz') fs.append(this.#previewButton());
-            if (title === 'Captura') fs.append(...(await this.#deviceFields()));
+            if (title === 'Escuta e transcrição') fs.append(...(await this.#deviceFields()));
             frag.append(fs);
         }
+        frag.append(this.#aiSummary());
         this.root.replaceChildren(frag);
-        // Campos que mudam a visibilidade de outros re-renderizam o painel
-        for (const key of ['decider_engine', 'stt_mode', 'tts_provider', 'main_provider', 'decider_provider', 'stt_online_provider']) {
-            this.root.querySelector(`[data-key="${key}"]`)?.addEventListener('change', () => {
-                Object.assign(this.values, this.read());
-                this.render();
-            });
-        }
+        this.root.querySelector('[data-key="stt_mode"]')?.addEventListener('change', () => {
+            Object.assign(this.values, this.read());
+            this.render();
+        });
     }
 
-    #field(key, label, help, suggestions) {
+    /** Resumo do que está configurado no config.php + atalho para o assistente. */
+    #aiSummary() {
+        const fs = document.createElement('fieldset');
+        const legend = document.createElement('legend');
+        legend.textContent = 'Inteligência artificial';
+        const dl = document.createElement('dl');
+        dl.className = 'ai-summary';
+        for (const [k, v] of [
+            ['Conversa', this.ai.main],
+            ['Triagem', this.ai.decider],
+            ['Transcrição online', this.ai.stt ?? 'não configurada'],
+            ['Voz', this.ai.tts],
+        ]) {
+            const dt = document.createElement('dt');
+            dt.textContent = k;
+            const dd = document.createElement('dd');
+            dd.textContent = v;
+            dl.append(dt, dd);
+        }
+        const link = document.createElement('a');
+        link.href = 'setup.php';
+        link.className = 'button ghost';
+        link.textContent = 'Reconfigurar IA';
+        const small = document.createElement('small');
+        small.className = 'muted';
+        small.textContent = 'Provedores, chaves e modelos. Pede a sua senha.';
+        fs.append(legend, dl, link, small);
+        return fs;
+    }
+
+    #voiceSelect(value) {
+        const select = document.createElement('select');
+        const browser = this.ai.tts_provider === 'browser';
+        const lang = (this.values.language || 'pt').slice(0, 2);
+        const voices = browser
+            ? browserVoices().filter((v) => v.lang.startsWith(lang)).map((v) => ({ id: v.name, name: `${v.name}${v.localService ? '' : ' (online)'}` }))
+            : this.ai.voices ?? [];
+        select.append(new Option('Padrão', '', false, value === ''));
+        for (const v of voices) select.append(new Option(v.name, v.id, false, v.id === value));
+        if (value && !voices.some((v) => v.id === value)) select.append(new Option(`${value} (indisponível)`, value, false, true));
+        return select;
+    }
+
+    #field(key, label, help) {
         const s = this.values;
         const wrap = document.createElement('label');
         wrap.className = 'field';
@@ -143,14 +147,17 @@ export class SettingsPanel {
         wrap.append(title);
         let input;
         const value = s[key];
-        if (this.options[key]) {
+        if (key === 'tts_voice') {
+            input = this.#voiceSelect(value);
+        } else if (this.options[key]) {
             input = document.createElement('select');
-            let opts = this.options[key];
-            if (/_provider$/.test(key)) opts = opts.filter((o) => this.available.includes(o) || o === value);
-            for (const o of opts) {
-                const opt = new Option(LABELS[o] ?? o, o, false, o === value);
-                if (/_provider$/.test(key) && !this.available.includes(o)) opt.textContent += ' (sem chave)';
-                input.append(opt);
+            for (const o of this.options[key]) input.append(new Option(LABELS[o] ?? o, o, false, o === value));
+            if (key === 'stt_mode' && !this.ai.stt) {
+                input.value = 'local';
+                input.disabled = true;
+                help = 'Nenhuma transcrição online configurada. Ative em Reconfigurar IA.';
+            } else if (key === 'stt_mode') {
+                help = `${help} Online: ${this.ai.stt}.`;
             }
         } else if (key === 'persona') {
             input = document.createElement('textarea');
@@ -180,13 +187,6 @@ export class SettingsPanel {
             input = document.createElement('input');
             input.type = 'text';
             input.value = Array.isArray(value) ? value.join(', ') : value;
-            if (suggestions?.length) {
-                const list = document.createElement('datalist');
-                list.id = `dl-${key}`;
-                for (const sug of suggestions) list.append(new Option(sug, sug));
-                input.setAttribute('list', list.id);
-                wrap.append(list);
-            }
         }
         input.dataset.key = key;
         wrap.append(input);

@@ -36,6 +36,9 @@ final class Pipeline
                 throw new \InvalidArgumentException('Transcrição online requer o áudio');
             }
             $stt = Ai::transcriber();
+            if ($stt === null) {
+                throw new \InvalidArgumentException('Transcrição online não configurada: use a local ou configure em Reconfigurar IA');
+            }
             $engine = $stt->name();
             try {
                 $vocab = array_values(array_filter([$s['assistant_name'], $s['user_name']]));

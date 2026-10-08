@@ -13,19 +13,29 @@ final class Speech
     public const DEFAULTS = [
         'gemini' => ['model' => 'gemini-3.8-flash-lite-tts', 'voice' => 'Kore'],
         'openai' => ['model' => 'gpt-4o-mini-tts', 'voice' => 'coral'],
+        'openrouter' => ['model' => 'google/gemini-3.8-flash-lite-tts', 'voice' => 'Kore'],
         'elevenlabs' => ['model' => 'eleven_flash_v2_5', 'voice' => ''],
     ];
 
     private string $model;
     private string $voice;
 
-    public function __construct(private string $provider, string $model, string $voice, private string $style = '')
+    /** @param list<array{id: string, name: string}> $voices vozes do modelo (do assistente de configuração) */
+    public function __construct(private string $provider, string $model, string $voice, private string $style = '', array $voices = [])
     {
         if (!isset(self::DEFAULTS[$provider])) {
             throw new \InvalidArgumentException("Provedor de voz sem síntese no servidor: $provider");
         }
         $this->model = $model !== '' ? $model : self::DEFAULTS[$provider]['model'];
-        $this->voice = $voice !== '' ? $voice : self::DEFAULTS[$provider]['voice'];
+        if ($voice === '') {
+            // Sem escolha: voz padrão do provedor, se o modelo a oferecer; senão a primeira da lista
+            $ids = array_column($voices, 'id');
+            $voice = self::DEFAULTS[$provider]['voice'];
+            if ($ids && !in_array($voice, $ids, true)) {
+                $voice = $ids[0];
+            }
+        }
+        $this->voice = $voice;
     }
 
     /** @return array{bytes: string, ext: string} */
@@ -33,7 +43,7 @@ final class Speech
     {
         return match ($this->provider) {
             'gemini' => $this->gemini($text),
-            'openai' => $this->openAi($text),
+            'openai', 'openrouter' => $this->openAiCompatible($text),
             'elevenlabs' => $this->elevenLabs($text),
         };
     }
@@ -71,9 +81,10 @@ final class Speech
         return ['bytes' => str_starts_with($bytes, 'RIFF') ? $bytes : self::wav($bytes, 24000), 'ext' => 'wav'];
     }
 
-    private function openAi(string $text): array
+    /** /audio/speech no formato OpenAI (OpenAI e OpenRouter). */
+    private function openAiCompatible(string $text): array
     {
-        $p = Config::provider('openai');
+        $p = Config::provider($this->provider);
         $body = ['model' => $this->model, 'voice' => $this->voice, 'input' => $text, 'response_format' => 'mp3'];
         if ($this->style !== '') {
             $body['instructions'] = 'Fale em português do Brasil. Estilo: ' . $this->style;
