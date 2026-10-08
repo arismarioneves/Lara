@@ -28,31 +28,27 @@ final class AiConfig
 
         $dec = (array)($in['decider'] ?? []);
         $engine = (string)($dec['engine'] ?? 'llm');
-        if ($engine === 'jev') {
-            if (!in_array('typesafe', $available, true)) {
-                throw new \InvalidArgumentException("{$roles['decider']['title']}: o Jev precisa da chave TypeSafe");
+        $p = (string)($dec['provider'] ?? '');
+        $title = $roles['decider']['title'];
+        if ($engine === 'systemone') {
+            // Jev (ou outro modelo de decisões) direto na TypeSafe ou pelo OpenRouter
+            if (!in_array($p, $available, true) || !Catalog::systemOne($p)) {
+                throw new \InvalidArgumentException("$title: o Jev precisa da chave do OpenRouter ou da TypeSafe");
             }
-            $out['decider'] = [
-                'engine' => 'jev',
-                'jev_model' => self::model($dec['jev_model'] ?? 'jev-latest', $roles['decider']['title']),
-                'provider' => '',
-                'model' => '',
-                'thinking' => '',
-            ];
+            $out['decider'] = ['engine' => 'systemone', 'provider' => $p, 'model' => self::model($dec['model'] ?? '', $title), 'thinking' => ''];
         } elseif ($engine === 'llm') {
-            $p = (string)($dec['provider'] ?? '');
-            if ($p === 'typesafe' || !$usable($p, 'decider')) {
-                throw new \InvalidArgumentException("{$roles['decider']['title']}: escolha um provedor com chave configurada");
+            // Qualquer provedor que converse serve de adaptador
+            if (!$usable($p, 'chat')) {
+                throw new \InvalidArgumentException("$title: escolha um provedor com chave configurada");
             }
             $out['decider'] = [
                 'engine' => 'llm',
-                'jev_model' => 'jev-latest',
                 'provider' => $p,
-                'model' => self::model($dec['model'] ?? '', $roles['decider']['title']),
+                'model' => self::model($dec['model'] ?? '', $title),
                 'thinking' => self::thinking($dec['thinking'] ?? ''),
             ];
         } else {
-            throw new \InvalidArgumentException("{$roles['decider']['title']}: motor inválido");
+            throw new \InvalidArgumentException("$title: motor inválido");
         }
 
         $stt = (array)($in['stt'] ?? []);

@@ -23,8 +23,8 @@ final class Ai
     public static function decider(): Decider
     {
         $c = Config::get('ai.decider');
-        if ($c['engine'] === 'jev') {
-            return new JevDecider($c['jev_model']);
+        if ($c['engine'] === 'systemone') {
+            return new SystemOneDecider($c['provider'], $c['model']);
         }
         return new LlmDecider(self::chat($c['provider'], $c['model'], $c['thinking']));
     }

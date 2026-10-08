@@ -18,7 +18,7 @@ flowchart LR
     C2 --> D
     D -->|ruído| N[("catalogado<br/>como ruído")]
     D -->|"Lara, ..."| R
-    D -->|resto| E["Decisor RLCD<br/>TypeSafe Jev ou<br/>adaptador LLM"]
+    D -->|resto| E["Decisor RLCD<br/>Jev (System One) ou<br/>adaptador LLM"]
     E -->|dirigida à Lara| R["IA principal<br/>Gemini Flash"]
     E -->|contexto / memória| M[("histórico<br/>relevante")]
     E -->|ruído| N
@@ -34,7 +34,7 @@ flowchart LR
    - `relevance` (choice): `noise` · `context` · `memory`
    - `importance` (score): irrelevante → importante
 
-   Há dois motores. O [TypeSafe Jev](https://docs.typesafe.ai/) (RLCD — *Reinforcement Learning for Calibrated Decisions*) devolve probabilidades em vez de texto, em ~70–500 ms segundo o fabricante, cobrando só os tokens de entrada (acesso antecipado). A alternativa aberta é o **adaptador Jev-compatível**, que faz as *mesmas* perguntas a qualquer LLM barato (Gemini Flash-Lite, Llama no Groq, um modelo local no Ollama…) e devolve as respostas no mesmo formato — o restante do sistema não percebe a troca. O assistente de configuração escolhe o Jev quando há chave TypeSafe e o adaptador nos demais casos.
+   Há dois motores. O **Jev** da TypeSafe (RLCD — *Reinforcement Learning for Calibrated Decisions*), um modelo "System One" que devolve probabilidades em vez de texto, em ~70–500 ms segundo o fabricante, cobrando só os tokens de entrada. Ele é chamado pelo endpoint `POST /systemone`, que tem o mesmo formato [direto na TypeSafe](https://docs.typesafe.ai/api) e [pelo OpenRouter](https://openrouter.ai/docs/api/api-reference/systemone/submit-a-system-one-request) (`~typesafe/jev-latest`, `typesafe/jev-1.13` e outros modelos de decisão). A alternativa é o **adaptador Jev-compatível**, que faz as *mesmas* perguntas a qualquer LLM barato (Gemini Flash-Lite, Llama no Groq, um modelo local no Ollama…) e devolve as respostas no mesmo formato — o restante do sistema não percebe a troca. O assistente de configuração escolhe o Jev sempre que há chave do OpenRouter ou da TypeSafe.
 5. **Política** — responde se `addressed ≥ limiar`. Logo depois de a Lara falar (janela de continuação), `needs_reply` também conta, para réplicas sem o nome dela ("e que horas mesmo?"). Fora disso ela não interrompe.
 6. **IA principal** — recebe **somente** falas catalogadas como dirigidas a ela ou relevantes, mais memórias antigas recuperadas por busca textual no MySQL. Ruído, conversas de terceiros sem relação e o modo de transcrição nunca chegam até ela.
 7. **Voz** — a do navegador (grátis) ou TTS do OpenRouter, Gemini, OpenAI ou ElevenLabs.
@@ -110,11 +110,11 @@ Há três níveis, do mais usado ao mais raro:
 | Papel                  | O que faz                                                         | Provedores                                     |
 | ---------------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
 | **Conversa**           | pensa e responde; só é chamada quando a Lara decide falar         | OpenRouter, Gemini, OpenAI, Groq, Ollama       |
-| **Triagem** (RLCD)     | avalia cada fala: é comigo? responder? memória, contexto ou ruído? | TypeSafe Jev, ou adaptador sobre OpenRouter, Gemini, OpenAI, Groq, Ollama |
+| **Triagem** (RLCD)     | avalia cada fala: é comigo? responder? memória, contexto ou ruído? | Jev pelo OpenRouter ou pela TypeSafe; ou adaptador sobre OpenRouter, Gemini, OpenAI, Groq, Ollama |
 | **Transcrição online** | opcional; a padrão é o Whisper local, grátis                      | OpenRouter, Gemini, Groq, OpenAI               |
 | **Voz**                | como a Lara fala                                                  | navegador (grátis), OpenRouter, Gemini, OpenAI, ElevenLabs |
 
-Sugestões com OpenRouter: `google/gemini-3.8-flash` (conversa, raciocínio baixo), `google/gemini-3.5-flash-lite` (triagem, raciocínio mínimo), `google/gemini-3.5-transcribe` e `google/gemini-3.8-flash-lite-tts`.
+Sugestões com OpenRouter: `google/gemini-3.8-flash` (conversa, raciocínio baixo), `~typesafe/jev-latest` (triagem), `google/gemini-3.5-transcribe` e `google/gemini-3.8-flash-lite-tts`.
 
 ## Uso em movimento, com fone de ouvido
 
@@ -158,7 +158,7 @@ setup.php               assistente: instalação completa e "Reconfigurar IA"
 api/                    endpoints JSON: session, ingest, history, settings, tts, audio, setup
 src/
   Assistant/            Pipeline, Prefilter, Decision (perguntas + política), Context
-  Ai/                   GeminiChat, OpenAiChat, Transcriber, Speech, JevDecider, LlmDecider
+  Ai/                   GeminiChat, OpenAiChat, Transcriber, Speech, SystemOneDecider (Jev), LlmDecider
   Setup/                Catalog (provedores e papéis), Probe (testar chave), AiConfig, Installer, ConfigFile
   Config, Db, Settings, Auth, Api, Http, Storage, Log
 assets/js/              app, listener (VAD), whisper.worker (Whisper local), voice, companion, settings, setup

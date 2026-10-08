@@ -20,7 +20,7 @@ final class Probe
     ];
     public const OPENAI_VOICES = ['coral', 'nova', 'shimmer', 'sage', 'alloy', 'ash', 'ballad', 'echo', 'fable', 'onyx', 'verse'];
 
-    /** @return array{models: array{chat: list<array>, stt: list<array>, tts: list<array>, jev: list<array>}, note?: string} */
+    /** @return array{models: array{chat: list<array>, stt: list<array>, tts: list<array>, decisions: list<array>}} */
     public static function run(string $provider, string $key, string $baseUrl): array
     {
         $base = rtrim($baseUrl, '/');
@@ -39,7 +39,7 @@ final class Probe
         } catch (ProviderException $e) {
             throw new ProviderException(self::friendly($e->getMessage()));
         }
-        $models += ['chat' => [], 'stt' => [], 'tts' => [], 'jev' => []];
+        $models += ['chat' => [], 'stt' => [], 'tts' => [], 'decisions' => []];
         foreach ($models as &$list) {
             usort($list, static fn($a, $b) => strcmp($a['id'], $b['id']));
         }
@@ -50,7 +50,7 @@ final class Probe
     {
         $auth = ['Authorization' => 'Bearer ' . $key];
         Http::getJson("$base/key", $auth); // 401 se a chave for inválida
-        $out = ['chat' => [], 'stt' => [], 'tts' => []];
+        $out = ['chat' => [], 'stt' => [], 'tts' => [], 'decisions' => []];
         foreach ((array)(Http::getJson("$base/models", $auth)['data'] ?? []) as $m) {
             $outMod = (array)($m['architecture']['output_modalities'] ?? ['text']);
             if (!in_array('text', $outMod, true) || in_array('image', $outMod, true) || str_ends_with((string)$m['id'], ':batch')) {
@@ -73,6 +73,15 @@ final class Probe
         foreach ((array)(Http::getJson("$base/models?output_modalities=speech", $auth)['data'] ?? []) as $m) {
             $voices = array_map(static fn($v) => ['id' => (string)$v, 'name' => (string)$v], (array)($m['supported_voices'] ?? []));
             $out['tts'][] = ['id' => (string)$m['id'], 'label' => (string)($m['name'] ?? $m['id']), 'voices' => $voices];
+        }
+        // Modelos System One (Jev e outros), servidos em /systemone
+        foreach ((array)(Http::getJson("$base/models?output_modalities=decisions", $auth)['data'] ?? []) as $m) {
+            $item = ['id' => (string)$m['id'], 'label' => (string)($m['name'] ?? $m['id'])];
+            $price = self::pricePerMillion($m['pricing'] ?? []);
+            if ($price !== null) {
+                $item['label'] .= " · $price";
+            }
+            $out['decisions'][] = $item;
         }
         return $out;
     }
@@ -104,7 +113,7 @@ final class Probe
             'questions' => ['ok' => ['type' => 'noul', 'instructions' => 'O texto é um teste de conexão?']],
         ], 15);
         $served = (string)($res['model'] ?? 'jev');
-        return ['jev' => [['id' => 'jev-latest', 'label' => "jev-latest (hoje: $served)"]]];
+        return ['decisions' => [['id' => 'jev-latest', 'label' => "Jev (hoje: $served)"]]];
     }
 
     private static function openAiLike(string $provider, string $base, string $key): array

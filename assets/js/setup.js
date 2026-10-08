@@ -86,11 +86,14 @@ function ready(name) {
 
 const available = () => Object.keys(S.catalog).filter(ready);
 const supports = (name, role) => S.catalog[name].roles.includes(role);
+const systemOne = (name) => !!S.catalog[name]?.systemone;
 
+/** Listas do "Testar". `systemone` = modelos de decisão (Jev); `decider` = LLMs usados pelo adaptador. */
 function modelsFor(name, role) {
     const m = provState(name).models;
     if (!m) return null;
-    if (role === 'decider') return name === 'typesafe' ? m.jev : m.chat;
+    if (role === 'decider') return m.chat;
+    if (role === 'systemone') return m.decisions;
     return m[role] ?? [];
 }
 
@@ -123,7 +126,7 @@ function probeSummary(models) {
     if (models.chat.length) parts.push(`${models.chat.length} de texto`);
     if (models.stt.length) parts.push(`${models.stt.length} de transcrição`);
     if (models.tts.length) parts.push(`${models.tts.length} de voz`);
-    if (models.jev.length) parts.push('Jev disponível');
+    if (models.decisions.length) parts.push(models.decisions.length === 1 ? 'Jev disponível' : `${models.decisions.length} de decisão (Jev e outros)`);
     return parts.length ? `Conectado · ${parts.join(' · ')}` : 'Conectado';
 }
 
@@ -147,11 +150,11 @@ function recommendRole(role) {
         return { provider: p, ...defaultsFor(p, 'chat') };
     }
     if (role === 'decider') {
-        const llm = pick('decider', ['typesafe']);
-        const d = defaultsFor(llm, 'decider');
-        return ready('typesafe')
-            ? { engine: 'jev', jev_model: 'jev-latest', provider: llm, model: d.model, thinking: d.thinking }
-            : { engine: 'llm', jev_model: 'jev-latest', provider: llm, model: d.model, thinking: d.thinking };
+        // Jev (System One) sempre que houver TypeSafe ou OpenRouter; senão o adaptador sobre um LLM
+        const so = S.roles.decider.prefer_systemone.find(ready);
+        if (so) return { engine: 'systemone', provider: so, model: defaultsFor(so, 'systemone').model, thinking: '' };
+        const llm = pick('decider');
+        return { engine: 'llm', provider: llm, ...defaultsFor(llm, 'decider') };
     }
     if (role === 'stt') {
         const p = pick('stt');
@@ -166,10 +169,9 @@ function ensureAi() {
     S.ai ??= { main: recommendRole('chat'), decider: recommendRole('decider'), stt: recommendRole('stt'), tts: recommendRole('tts') };
     const a = S.ai;
     if (!ready(a.main.provider)) a.main = recommendRole('chat');
-    if (a.decider.engine === 'jev' && !ready('typesafe')) a.decider = { ...recommendRole('decider'), engine: 'llm' };
-    if (a.decider.engine === 'llm' && !ready(a.decider.provider)) {
-        const r = recommendRole('decider');
-        a.decider = { ...r, engine: 'llm' };
+    const d = a.decider;
+    if (d.engine === 'systemone' ? !(ready(d.provider) && systemOne(d.provider)) : !ready(d.provider)) {
+        a.decider = recommendRole('decider');
     }
     if (a.stt.provider && !ready(a.stt.provider)) a.stt = recommendRole('stt');
     if (a.tts.provider !== 'browser' && !ready(a.tts.provider)) a.tts = recommendRole('tts');
@@ -518,36 +520,45 @@ function roleCard(role) {
             h('div', {}, h('h3', {}, meta.title, ' ', h('small', { text: meta.subtitle })), h('p', { text: meta.description }))),
         body);
 
+    // Na triagem, `kind` separa o System One (Jev) do adaptador; nos demais papéis é o próprio papel
+    let kind = role;
     if (role === 'decider') {
         const d = S.ai.decider;
-        const jevOk = ready('typesafe');
+        const soProviders = S.roles.decider.prefer_systemone.filter(ready);
         const seg = h('div', { class: 'segmented', role: 'radiogroup' },
-            [['jev', 'TypeSafe Jev', 'decisões calibradas em ~0,1–0,5 s'], ['llm', 'Adaptador sobre LLM', 'mesmas perguntas, qualquer modelo barato']].map(([v, label, hint]) =>
-                h('button', {
-                    type: 'button', role: 'radio', 'aria-checked': String(d.engine === v), class: d.engine === v ? 'on' : '',
-                    disabled: v === 'jev' && !jevOk, title: v === 'jev' && !jevOk ? 'Requer a chave TypeSafe' : '',
-                    on: { click: () => { d.engine = v; render(); } },
-                }, h('strong', { text: label }), h('small', { text: v === 'jev' && !jevOk ? 'requer a chave TypeSafe' : hint }))));
+            [
+                ['systemone', 'Jev (System One)', 'decisões calibradas em ~0,1–0,5 s'],
+                ['llm', 'Adaptador sobre LLM', 'mesmas perguntas a um modelo de texto'],
+            ].map(([v, label, hint]) => h('button', {
+                type: 'button', role: 'radio', 'aria-checked': String(d.engine === v), class: d.engine === v ? 'on' : '',
+                disabled: v === 'systemone' && !soProviders.length,
+                on: {
+                    click: () => {
+                        if (d.engine === v) return;
+                        const p = v === 'systemone' ? soProviders[0] : pick('decider');
+                        S.ai.decider = { engine: v, provider: p, ...defaultsFor(p, v === 'systemone' ? 'systemone' : 'decider') };
+                        if (v === 'systemone') S.ai.decider.thinking = '';
+                        render();
+                    },
+                },
+            }, h('strong', { text: label }), h('small', { text: v === 'systemone' && !soProviders.length ? 'requer OpenRouter ou TypeSafe' : hint }))));
         body.append(seg);
-        if (d.engine === 'jev') {
-            body.append(modelField('typesafe', 'decider', d, 'jev_model'));
-            return card;
-        }
+        if (d.engine === 'systemone') kind = 'systemone';
     }
 
     const cfg = role === 'chat' ? S.ai.main : S.ai[role];
+    const offers = (n) => kind === 'systemone' ? systemOne(n) : kind === 'decider' ? supports(n, 'chat') : supports(n, role);
     const opts = [];
     if (role === 'stt') opts.push(['', 'Somente local (Whisper no aparelho, grátis)']);
     if (role === 'tts') opts.push(['browser', 'Voz do navegador (grátis)']);
     for (const n of Object.keys(S.catalog)) {
-        if (n === 'typesafe' || !supports(n, role) || !ready(n)) continue;
-        opts.push([n, S.catalog[n].label]);
+        if (ready(n) && offers(n)) opts.push([n, S.catalog[n].label]);
     }
     const sel = h('select', {
         on: {
             change: (e) => {
                 const p = e.target.value;
-                const d = p && p !== 'browser' ? defaultsFor(p, role) : { model: '', thinking: '' };
+                const d = p && p !== 'browser' ? defaultsFor(p, kind) : { model: '', thinking: '' };
                 Object.assign(cfg, { provider: p, model: d.model });
                 if ('thinking' in cfg) cfg.thinking = d.thinking;
                 render();
@@ -557,10 +568,10 @@ function roleCard(role) {
     body.append(field('Provedor', sel));
 
     if (cfg.provider && cfg.provider !== 'browser') {
-        body.append(modelField(cfg.provider, role, cfg, 'model'));
-        // O nível de raciocínio só é enviado ao Gemini e ao OpenRouter; nos demais o campo não teria efeito
+        body.append(modelField(cfg.provider, kind, cfg, 'model'));
+        // O nível de raciocínio só é enviado ao Gemini e ao OpenRouter (e não existe no System One)
         if ('thinking' in cfg) {
-            if (['gemini', 'openrouter'].includes(cfg.provider)) body.append(thinkingField(cfg, role));
+            if (kind !== 'systemone' && ['gemini', 'openrouter'].includes(cfg.provider)) body.append(thinkingField(cfg, kind));
             else cfg.thinking = '';
         }
         if (role === 'tts') {
@@ -628,7 +639,7 @@ function renderReview() {
     }
     rows.push(['Provedores', available().map((n) => S.catalog[n].label).join(', ')]);
     rows.push(['Conversa', label(a.main.provider, a.main.model) + (a.main.thinking ? ` · raciocínio ${THINKING_LABEL[a.main.thinking]}` : '')]);
-    rows.push(['Triagem', a.decider.engine === 'jev' ? label('typesafe', a.decider.jev_model) : `Adaptador · ${label(a.decider.provider, a.decider.model)}`]);
+    rows.push(['Triagem', a.decider.engine === 'systemone' ? `System One · ${label(a.decider.provider, a.decider.model)}` : `Adaptador · ${label(a.decider.provider, a.decider.model)}`]);
     rows.push(['Transcrição', a.stt.provider ? `Local (padrão) ou online: ${label(a.stt.provider, a.stt.model)}` : 'Somente local (Whisper no aparelho)']);
     rows.push(['Voz', a.tts.provider === 'browser' ? 'Voz do navegador' : label(a.tts.provider, a.tts.model)]);
     return section(

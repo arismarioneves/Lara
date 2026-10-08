@@ -28,10 +28,19 @@ check('só OpenRouter cobre os quatro papéis', $ai['main']['provider'] === 'ope
 check('vozes inválidas são descartadas', $ai['tts']['voices'] === [['id' => 'Kore', 'name' => 'Kore']]);
 
 check('provedor sem chave é recusado', $throws(fn() => AiConfig::normalize($onlyOpenRouter, ['gemini']), 'Conversa'));
-check('Jev sem chave TypeSafe é recusado', $throws(fn() => AiConfig::normalize(
-    ['decider' => ['engine' => 'jev']] + $onlyOpenRouter,
+$jevViaOr = ['decider' => ['engine' => 'systemone', 'provider' => 'openrouter', 'model' => '~typesafe/jev-latest', 'thinking' => 'low']] + $onlyOpenRouter;
+$jev = AiConfig::normalize($jevViaOr, ['openrouter']);
+check('Jev pelo OpenRouter, sem chave TypeSafe', $jev['decider'] === ['engine' => 'systemone', 'provider' => 'openrouter', 'model' => '~typesafe/jev-latest', 'thinking' => '']);
+$jev = AiConfig::normalize(['decider' => ['engine' => 'systemone', 'provider' => 'typesafe', 'model' => 'jev-latest']] + $onlyOpenRouter, ['openrouter', 'typesafe']);
+check('Jev direto na TypeSafe', $jev['decider']['provider'] === 'typesafe');
+check('System One sem chave do provedor é recusado', $throws(fn() => AiConfig::normalize(
+    ['decider' => ['engine' => 'systemone', 'provider' => 'typesafe', 'model' => 'jev-latest']] + $onlyOpenRouter,
     ['openrouter']
-), 'TypeSafe'));
+), 'Jev'));
+check('provedor sem System One (Gemini) não serve de Jev', $throws(fn() => AiConfig::normalize(
+    ['decider' => ['engine' => 'systemone', 'provider' => 'gemini', 'model' => 'x']] + $onlyOpenRouter,
+    ['openrouter', 'gemini']
+)));
 check('TypeSafe não serve como adaptador LLM', $throws(fn() => AiConfig::normalize(
     ['decider' => ['engine' => 'llm', 'provider' => 'typesafe', 'model' => 'x']] + $onlyOpenRouter,
     ['openrouter', 'typesafe']
@@ -44,9 +53,6 @@ check('modelo com espaço ou aspas é recusado', $throws(fn() => AiConfig::norma
     ['main' => ['provider' => 'openrouter', 'model' => "x' y"]] + $onlyOpenRouter,
     ['openrouter']
 )));
-
-$jev = AiConfig::normalize(['decider' => ['engine' => 'jev', 'jev_model' => 'jev-latest']] + $onlyOpenRouter, ['openrouter', 'typesafe']);
-check('Jev com chave é aceito', $jev['decider']['engine'] === 'jev' && $jev['decider']['provider'] === '');
 
 $minimal = AiConfig::normalize([
     'main' => $onlyOpenRouter['main'],

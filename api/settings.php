@@ -26,9 +26,8 @@ Api::run(static function (): void {
             $options[$key] = $def['options'];
         }
     }
-    $decider = $ai['decider']['engine'] === 'jev'
-        ? Ai::label('typesafe', $ai['decider']['jev_model'])
-        : Ai::label($ai['decider']['provider'], $ai['decider']['model']);
+    $decider = Ai::label($ai['decider']['provider'], $ai['decider']['model'])
+        . ($ai['decider']['engine'] === 'llm' ? ' (adaptador)' : '');
     Api::ok([
         'settings' => $values,
         'options' => $options,

@@ -7,21 +7,24 @@ use Lara\Config;
 use Lara\Http;
 use Lara\ProviderException;
 
-/** TypeSafe Jev (RLCD) hospedado: decisões calibradas em ~70–500 ms, saída sem tokens gerados. */
-final class JevDecider implements Decider
+/**
+ * Modelo System One (TypeSafe Jev e outros modelos de "decisions"): decisões calibradas em ~70–500 ms,
+ * sem gerar texto. O mesmo POST /systemone funciona direto na TypeSafe e pelo OpenRouter.
+ */
+final class SystemOneDecider implements Decider
 {
-    public function __construct(private string $model)
+    public function __construct(private string $provider, private string $model)
     {
     }
 
     public function name(): string
     {
-        return 'jev:' . $this->model;
+        return $this->provider . ':' . $this->model;
     }
 
     public function answers(string|array $state, array $questions): array
     {
-        $p = Config::provider('typesafe');
+        $p = Config::provider($this->provider);
         $res = Http::postJson($p['base_url'] . '/systemone', ['Authorization' => 'Bearer ' . $p['api_key']], [
             'state' => $state,
             'model' => $this->model,
@@ -29,11 +32,11 @@ final class JevDecider implements Decider
         ], 10);
         $answers = $res['answers'] ?? null;
         if (!is_array($answers)) {
-            throw new ProviderException('typesafe: resposta sem answers');
+            throw new ProviderException($this->provider . ': resposta sem answers');
         }
         foreach (array_keys($questions) as $id) {
             if (!isset($answers[$id]['type'])) {
-                throw new ProviderException("typesafe: resposta sem a pergunta $id");
+                throw new ProviderException($this->provider . ": resposta sem a pergunta $id");
             }
         }
         return $answers;

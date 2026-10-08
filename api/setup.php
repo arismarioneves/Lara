@@ -50,7 +50,7 @@ Api::run(static function () use ($installed, $method, $action, $need): void {
             }
             $catalog = [];
             foreach (Catalog::providers() as $name => $p) {
-                $catalog[$name] = array_intersect_key($p, array_flip(['label', 'tagline', 'recommended', 'auth', 'key_url', 'placeholder', 'roles', 'defaults']));
+                $catalog[$name] = array_intersect_key($p, array_flip(['label', 'tagline', 'recommended', 'auth', 'key_url', 'placeholder', 'roles', 'systemone', 'defaults']));
             }
             $state = [
                 'mode' => $installed ? 'reconfigure' : 'install',

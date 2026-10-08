@@ -17,15 +17,18 @@ final class Catalog
         return [
             'openrouter' => [
                 'label' => 'OpenRouter',
-                'tagline' => 'Uma chave, centenas de modelos. Sozinho cobre conversa, triagem, transcrição e voz.',
+                'tagline' => 'Uma chave, centenas de modelos. Sozinho cobre conversa, triagem (inclusive o Jev), transcrição e voz.',
                 'recommended' => true,
                 'auth' => 'key',
                 'key_url' => 'https://openrouter.ai/settings/keys',
                 'base_url' => 'https://openrouter.ai/api/v1',
                 'roles' => ['chat', 'decider', 'stt', 'tts'],
+                // Serve modelos System One (Jev e outros "decisions") em /systemone, no mesmo formato da TypeSafe
+                'systemone' => true,
                 'defaults' => [
                     'chat' => ['model' => 'google/gemini-3.8-flash', 'thinking' => 'low'],
                     'decider' => ['model' => 'google/gemini-3.5-flash-lite', 'thinking' => 'minimal'],
+                    'systemone' => ['model' => '~typesafe/jev-latest'],
                     'stt' => ['model' => 'google/gemini-3.5-transcribe'],
                     'tts' => ['model' => 'google/gemini-3.8-flash-lite-tts'],
                 ],
@@ -46,12 +49,13 @@ final class Catalog
             ],
             'typesafe' => [
                 'label' => 'TypeSafe Jev',
-                'tagline' => 'Decisor RLCD: classifica cada fala em milissegundos e cobra só a entrada. Acesso antecipado.',
+                'tagline' => 'Jev direto na TypeSafe. Decisões calibradas em milissegundos, cobrando só a entrada. Também disponível pelo OpenRouter.',
                 'auth' => 'key',
                 'key_url' => 'https://console.typesafe.ai',
                 'base_url' => 'https://api.typesafe.ai/v1',
                 'roles' => ['decider'],
-                'defaults' => ['decider' => ['model' => 'jev-latest']],
+                'systemone' => true,
+                'defaults' => ['systemone' => ['model' => 'jev-latest']],
             ],
             'groq' => [
                 'label' => 'Groq',
@@ -116,7 +120,9 @@ final class Catalog
                 'title' => 'Triagem',
                 'subtitle' => 'decisor RLCD',
                 'description' => 'Avalia cada fala ouvida: é comigo? precisa de resposta? é memória, contexto ou ruído? Roda o tempo todo, então precisa ser rápido e barato.',
-                'prefer' => ['typesafe', 'gemini', 'openrouter', 'groq', 'openai', 'ollama'],
+                // System One (Jev) primeiro; o adaptador sobre LLM é a alternativa
+                'prefer_systemone' => ['typesafe', 'openrouter'],
+                'prefer' => ['gemini', 'openrouter', 'groq', 'openai', 'ollama'],
             ],
             'stt' => [
                 'title' => 'Transcrição online',
@@ -136,5 +142,11 @@ final class Catalog
     public static function supports(string $provider, string $role): bool
     {
         return in_array($role, self::providers()[$provider]['roles'] ?? [], true);
+    }
+
+    /** Atende o endpoint System One (`/systemone`): perguntas tipadas → respostas calibradas. */
+    public static function systemOne(string $provider): bool
+    {
+        return !empty(self::providers()[$provider]['systemone']);
     }
 }
