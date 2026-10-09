@@ -19,9 +19,8 @@ final class Installer
     {
         $root = dirname(__DIR__, 2);
         $storage = Config::storagePath();
-        if (!is_dir($storage)) {
-            @mkdir($storage, 0700, true);
-        }
+        $dirs = ['sessions', 'logs', 'audio/heard', 'audio/spoken'];
+        $missing = array_values(array_filter($dirs, static fn(string $d) => !is_dir("$storage/$d") || !is_writable("$storage/$d")));
         if (is_dir($storage) && !is_file("$storage/" . self::PROBE)) {
             @file_put_contents("$storage/" . self::PROBE, "Se você consegue ler isto pelo navegador, a pasta storage/ NÃO está protegida.\n");
         }
@@ -40,8 +39,9 @@ final class Installer
             $ext('intl', false, 'recomendada: melhora a detecção da palavra de ativação com acentos'),
             [
                 'id' => 'storage', 'label' => 'Pasta storage/ gravável', 'required' => true,
-                'ok' => is_dir($storage) && is_writable($storage),
-                'detail' => is_writable($storage) ? 'áudios, sessões e logs ficam aqui' : "dê permissão de escrita em $storage",
+                'ok' => is_dir($storage) && is_writable($storage) && !$missing,
+                'detail' => !is_writable($storage) ? "dê permissão de escrita em $storage"
+                    : ($missing ? 'crie (com permissão de escrita) as pastas: ' . implode(', ', $missing) : 'áudios, sessões e logs ficam aqui'),
             ],
             [
                 'id' => 'config', 'label' => 'Pasta do projeto gravável', 'required' => false,

@@ -18,9 +18,6 @@ final class Log
     private static function write(string $level, string $channel, string $message): void
     {
         $dir = Config::storagePath('logs');
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0700, true);
-        }
         $line = sprintf("[%s] %s.%s: %s\n", date('c'), $channel, $level, str_replace("\n", ' ', $message));
         @file_put_contents($dir . '/lara-' . date('Y-m-d') . '.log', $line, FILE_APPEND | LOCK_EX);
     }

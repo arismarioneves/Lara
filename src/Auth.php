@@ -13,9 +13,6 @@ final class Auth
         }
         $lifetime = max(1, (int)Config::get('app.session_days', 30)) * 86400;
         $dir = Config::storagePath('sessions');
-        if (!is_dir($dir)) {
-            mkdir($dir, 0700, true);
-        }
         session_save_path($dir);
         ini_set('session.gc_maxlifetime', (string)$lifetime);
         ini_set('session.use_strict_mode', '1');

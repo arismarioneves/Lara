@@ -4,9 +4,11 @@ config.php.tmp
 .env
 .env.*
 
-# Pasta privada: mantém só a proteção
-/storage/*
+# Pasta privada: versiona só a proteção e as pastas (com index.php)
+/storage/**
+!/storage/**/
 !/storage/.htaccess
+!/storage/**/index.php
 
 # Ferramentas
 /vendor/

@@ -19,11 +19,8 @@ final class Storage
         if (!isset(self::AUDIO_TYPES[$ext])) {
             throw new \InvalidArgumentException("Formato de áudio não suportado: $ext");
         }
-        $rel = sprintf('audio/%s/%s/%s.%s', $kind, date('Y/m/d'), date('His') . '-' . bin2hex(random_bytes(6)), $ext);
+        $rel = sprintf('audio/%s/%s.%s', $kind, date('Ymd-His') . '-' . bin2hex(random_bytes(6)), $ext);
         $abs = Config::storagePath($rel);
-        if (!is_dir(dirname($abs)) && !mkdir(dirname($abs), 0700, true) && !is_dir(dirname($abs))) {
-            throw new \RuntimeException('Não foi possível criar a pasta de áudio');
-        }
         if (file_put_contents($abs, $bytes, LOCK_EX) === false) {
             throw new \RuntimeException('Não foi possível gravar o áudio');
         }
@@ -33,7 +30,7 @@ final class Storage
     /** Caminho absoluto seguro (impede path traversal). */
     public static function resolve(string $rel): ?string
     {
-        if (!preg_match('#^audio/[a-z]+/\d{4}/\d{2}/\d{2}/[\w-]+\.(wav|mp3|ogg|webm)$#', $rel)) {
+        if (!preg_match('#^audio/(heard|spoken)/[\w-]+\.(wav|mp3|ogg|webm)$#', $rel)) {
             return null;
         }
         $abs = Config::storagePath($rel);

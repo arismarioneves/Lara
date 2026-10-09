@@ -135,7 +135,7 @@ Limites conhecidos:
 ## Dados e privacidade
 
 - Textos e catalogação: MySQL (`messages`, `settings`).
-- Áudios (falas captadas e vozes geradas), sessões e logs: `storage/`, bloqueada por `.htaccess` (`Require all denied`). O acesso é só via `api/audio` e `api/tts`, com sessão. Em produção, prefira apontar `storage_path` para fora da raiz web.
+- Áudios (falas captadas e vozes geradas), sessões e logs: `storage/`, bloqueada por `.htaccess` (`Require all denied`). O acesso é só via `api/audio` e `api/tts`, com sessão. Em produção, prefira apontar `storage_path` para fora da raiz web — nesse caso crie lá, com permissão de escrita, as mesmas pastas que vêm no repositório: `sessions/`, `logs/`, `audio/heard/` e `audio/spoken/`. A aplicação não cria pastas.
 - Login com senha única (hash em `config.php`), cookie `HttpOnly` + `SameSite=Strict`, token CSRF em toda escrita, CSP restritiva.
 - `src/`, `database/`, `bin/`, `tests/`, `config.php` e arquivos ocultos também são bloqueados pelo `.htaccess`.
 - Lembre que gravar conversas de terceiros pode exigir consentimento conforme a legislação local.
@@ -163,7 +163,7 @@ src/
   Config, Db, Settings, Auth, Api, Http, Storage, Log
 assets/js/              app, listener (VAD), whisper.worker (Whisper local), voice, companion, settings, setup
 database/schema.sql     esquema MySQL
-storage/                áudios, sessões, logs (privado)
+storage/                sessions/, logs/, audio/heard/, audio/spoken/ (privado; pastas versionadas)
 bin/lara.php            CLI
 ```
 
