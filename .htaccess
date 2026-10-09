@@ -27,7 +27,7 @@ AddDefaultCharset utf-8
     RewriteCond %{REQUEST_FILENAME}.php -f
     RewriteRule ^(.+)$ $1.php [L]
 </IfModule>
-<FilesMatch "^(config\.php(\.tmp)?|README\.md|LICENSE)$">
+<FilesMatch "^(config\.php(\.tmp)?|README\.md|AGENTS\.md|LICENSE)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^\.">
