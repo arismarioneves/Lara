@@ -1,5 +1,5 @@
 # Lara — Apache 2.4
-Options -Indexes
+Options -Indexes -MultiViews
 DirectoryIndex index.php
 AddDefaultCharset utf-8
 
@@ -13,6 +13,19 @@ AddDefaultCharset utf-8
     RewriteEngine On
     RewriteRule (^|/)\. - [F,L]
     RewriteRule ^(src|database|bin|storage|tests)(/|$) - [F,L]
+
+    # URLs sem .php: quem pede "x.php" é redirecionado para "x" (só GET/HEAD; POST não sobrevive a 301)
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} \s/+((?:[^?\s]*/)?)index\.php[\s?] [NC]
+    RewriteRule ^ /%1 [R=301,L,NE]
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} \s/+([^?\s]+)\.php[\s?] [NC]
+    RewriteRule ^ /%1 [R=301,L,NE]
+
+    # "x" é servido por "x.php" quando o arquivo existe
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+)$ $1.php [L]
 </IfModule>
 <FilesMatch "^(config\.php(\.tmp)?|README\.md|LICENSE)$">
     Require all denied

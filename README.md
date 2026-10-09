@@ -61,7 +61,7 @@ O switch muda apenas **de onde vem o texto**. A partir do texto, o fluxo é idê
 
 - PHP 8.1+ com `curl`, `pdo_mysql`, `mbstring` (e `intl`, recomendado para normalizar acentos)
 - MySQL 8+ (usa `JSON` e `FULLTEXT`)
-- Apache 2.4 com `mod_rewrite` e `mod_headers` (as regras de proteção estão no `.htaccess`)
+- Apache 2.4 com `mod_rewrite` e `mod_headers` (as regras de proteção e as URLs sem `.php` estão no `.htaccess`)
 - **HTTPS** em produção — o navegador só libera o microfone em contexto seguro (exceto `localhost`)
 - Navegador: Chrome/Edge (desktop ou Android) recomendados; WebGPU acelera bastante o Whisper local
 - Uma chave de IA. **Só o OpenRouter já basta** (conversa, triagem, transcrição online e voz); Gemini, Groq, OpenAI, ElevenLabs, TypeSafe Jev e Ollama são alternativas ou complementos
@@ -130,12 +130,12 @@ Limites conhecidos:
 - **iOS/Safari** suspende o microfone de PWAs em segundo plano; lá, use com a tela ligada.
 - **Bluetooth em modo chamada (HFP)**: quando o microfone do fone está ativo, o áudio cai para banda estreita; a transcrição continua, mas a qualidade de voz da Lara diminui.
 - Em aba em segundo plano **sem** o modo caminhada, o Chrome pode adiar a reprodução da resposta; a Lara desiste em 10 s em vez de travar.
-- Escuta realmente contínua com tela desligada por horas, em qualquer aparelho, exige um app nativo (ex.: TWA/Capacitor com serviço em primeiro plano). A arquitetura já permite isso: o app nativo só precisaria enviar os trechos para `api/ingest.php`.
+- Escuta realmente contínua com tela desligada por horas, em qualquer aparelho, exige um app nativo (ex.: TWA/Capacitor com serviço em primeiro plano). A arquitetura já permite isso: o app nativo só precisaria enviar os trechos para `api/ingest`.
 
 ## Dados e privacidade
 
 - Textos e catalogação: MySQL (`messages`, `settings`).
-- Áudios (falas captadas e vozes geradas), sessões e logs: `storage/`, bloqueada por `.htaccess` (`Require all denied`). O acesso é só via `api/audio.php` e `api/tts.php`, com sessão. Em produção, prefira apontar `storage_path` para fora da raiz web.
+- Áudios (falas captadas e vozes geradas), sessões e logs: `storage/`, bloqueada por `.htaccess` (`Require all denied`). O acesso é só via `api/audio` e `api/tts`, com sessão. Em produção, prefira apontar `storage_path` para fora da raiz web.
 - Login com senha única (hash em `config.php`), cookie `HttpOnly` + `SameSite=Strict`, token CSRF em toda escrita, CSP restritiva.
 - `src/`, `database/`, `bin/`, `tests/`, `config.php` e arquivos ocultos também são bloqueados pelo `.htaccess`.
 - Lembre que gravar conversas de terceiros pode exigir consentimento conforme a legislação local.

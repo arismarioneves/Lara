@@ -69,7 +69,7 @@ function renderMessage(m) {
         play.className = 'play';
         play.ariaLabel = 'Ouvir trecho';
         play.textContent = '▶';
-        play.addEventListener('click', () => new Audio(`api/audio.php?id=${m.id}`).play());
+        play.addEventListener('click', () => new Audio(`api/audio?id=${m.id}`).play());
         meta.append(play);
     }
     const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;

@@ -55,7 +55,7 @@ function icon(path) {
 }
 
 async function api(action, body) {
-    const res = await fetch(`api/setup.php?action=${action}`, {
+    const res = await fetch(`api/setup?action=${action}`, {
         method: body === undefined ? 'GET' : 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': S.csrf },
         body: body === undefined ? undefined : JSON.stringify(body),

@@ -7,7 +7,7 @@ use Lara\Auth;
 use Lara\Config;
 
 if (!Config::installed()) {
-    header('Location: setup.php');
+    header('Location: setup');
     exit;
 }
 

@@ -17,7 +17,7 @@ async function request(path, { method = 'GET', json, form, raw = false } = {}) {
         body = form;
     }
     const res = await fetch(path, { method, headers, body, credentials: 'same-origin' });
-    if (res.status === 401 && !path.endsWith('session.php')) {
+    if (res.status === 401 && !path.endsWith('session')) {
         location.reload(); // sessão expirou → tela de login
         throw new ApiError(401, 'Sessão expirada');
     }
@@ -28,11 +28,11 @@ async function request(path, { method = 'GET', json, form, raw = false } = {}) {
 }
 
 export const api = {
-    login: (password) => request('api/session.php', { method: 'POST', json: { password } }),
-    logout: () => request('api/session.php', { method: 'DELETE' }),
-    settings: () => request('api/settings.php'),
-    saveSettings: (values) => request('api/settings.php', { method: 'POST', json: values }),
-    history: (params = {}) => request('api/history.php?' + new URLSearchParams(params)),
-    ingest: (form) => request('api/ingest.php', { method: 'POST', form }),
-    ttsPreview: (text) => request('api/tts.php', { method: 'POST', json: { text }, raw: true }),
+    login: (password) => request('api/session', { method: 'POST', json: { password } }),
+    logout: () => request('api/session', { method: 'DELETE' }),
+    settings: () => request('api/settings'),
+    saveSettings: (values) => request('api/settings', { method: 'POST', json: values }),
+    history: (params = {}) => request('api/history?' + new URLSearchParams(params)),
+    ingest: (form) => request('api/ingest', { method: 'POST', form }),
+    ttsPreview: (text) => request('api/tts', { method: 'POST', json: { text }, raw: true }),
 };

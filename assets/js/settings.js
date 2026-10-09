@@ -115,7 +115,7 @@ export class SettingsPanel {
             dl.append(dt, dd);
         }
         const link = document.createElement('a');
-        link.href = 'setup.php';
+        link.href = 'setup';
         link.className = 'button ghost';
         link.textContent = 'Reconfigurar IA';
         const small = document.createElement('small');
