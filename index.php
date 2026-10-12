@@ -63,9 +63,6 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' https://c
     </section>
 
     <section class="feed-wrap">
-        <div class="feed-tools">
-            <label class="toggle"><input type="checkbox" id="show-noise"> mostrar ruído</label>
-        </div>
         <ol class="feed" id="feed" aria-live="polite"></ol>
     </section>
 </main>

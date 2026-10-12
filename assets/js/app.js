@@ -93,6 +93,11 @@ async function loadHistory() {
     feed.scrollTop = feed.scrollHeight;
 }
 
+/** Ruído fica fora do histórico, a menos que este aparelho peça para mostrá-lo (Configurações). */
+function applyNoiseVisibility() {
+    feed.classList.toggle('show-noise', localStorage.getItem(LOCAL_KEYS.noise) === '1');
+}
+
 // ---------- transcrição local ----------
 function ensureWorker() {
     if (sttMode() !== 'local') return;
@@ -254,6 +259,7 @@ async function saveSettings() {
     const local = panel.readLocal();
     const prevMic = localStorage.getItem(LOCAL_KEYS.mic) ?? '';
     for (const [k, v] of Object.entries(local)) localStorage.setItem(k, v);
+    applyNoiseVisibility();
 
     if (prevMic !== (local[LOCAL_KEYS.mic] ?? '') || before.vad_threshold !== settings.vad_threshold) {
         await listener.reconfigure({ deviceId: local[LOCAL_KEYS.mic], threshold: settings.vad_threshold });
@@ -277,7 +283,6 @@ $('logout').addEventListener('click', async () => {
     await api.logout();
     location.reload();
 });
-$('show-noise').addEventListener('change', (e) => feed.classList.toggle('show-noise', e.target.checked));
 if ('speechSynthesis' in window) speechSynthesis.addEventListener?.('voiceschanged', () => dialog.open && panel.render());
 
 // ---------- início ----------
@@ -286,6 +291,7 @@ if ('speechSynthesis' in window) speechSynthesis.addEventListener?.('voiceschang
         applySettings(await api.settings());
         listener.deviceId = localStorage.getItem(LOCAL_KEYS.mic) ?? '';
         listener.threshold = settings.vad_threshold;
+        applyNoiseVisibility();
         await loadHistory();
         idleState();
     } catch (err) {

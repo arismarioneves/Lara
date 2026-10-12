@@ -81,16 +81,23 @@ final class Speech
         return ['bytes' => str_starts_with($bytes, 'RIFF') ? $bytes : self::wav($bytes, 24000), 'ext' => 'wav'];
     }
 
-    /** /audio/speech no formato OpenAI (OpenAI e OpenRouter). */
+    /**
+     * /audio/speech no formato OpenAI (OpenAI e OpenRouter). No OpenRouter o formato aceito por todos
+     * os modelos é PCM (os Gemini TTS rejeitam mp3): 24 kHz, 16 bits, mono, empacotado em WAV.
+     */
     private function openAiCompatible(string $text): array
     {
         $p = Config::provider($this->provider);
-        $body = ['model' => $this->model, 'voice' => $this->voice, 'input' => $text, 'response_format' => 'mp3'];
+        $pcm = $this->provider === 'openrouter';
+        $body = ['model' => $this->model, 'voice' => $this->voice, 'input' => $text, 'response_format' => $pcm ? 'pcm' : 'mp3'];
         if ($this->style !== '') {
             $body['instructions'] = 'Fale em português do Brasil. Estilo: ' . $this->style;
         }
         $res = Http::postForBinary($p['base_url'] . '/audio/speech', ['Authorization' => 'Bearer ' . $p['api_key']], $body);
-        return ['bytes' => $res['body'], 'ext' => 'mp3'];
+        if (!$pcm || str_starts_with($res['type'], 'audio/mpeg')) {
+            return ['bytes' => $res['body'], 'ext' => 'mp3'];
+        }
+        return ['bytes' => str_starts_with($res['body'], 'RIFF') ? $res['body'] : self::wav($res['body'], 24000), 'ext' => 'wav'];
     }
 
     private function elevenLabs(string $text): array

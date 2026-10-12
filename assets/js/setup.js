@@ -401,7 +401,7 @@ function renderProviders() {
         'Cole as chaves dos serviços que quiser usar. Só o OpenRouter já basta: com uma chave a Lara conversa, faz a triagem, transcreve e fala. Os demais são opcionais, para quem prefere ir direto ao fornecedor.',
         h('div', { class: 'coverage', id: 'coverage' }),
         grid,
-        h('p', { class: 'fineprint', text: 'As chaves ficam só no servidor, no config.php (bloqueado pelo .htaccess). Elas nunca são enviadas de volta ao navegador.' }),
+        h('p', { class: 'fineprint', text: 'As chaves ficam só no servidor, elas nunca são enviadas de volta ao navegador.' }),
     );
 }
 
@@ -645,7 +645,7 @@ function renderReview() {
     return section(
         S.mode === 'install' ? 'Tudo pronto' : 'Revisar alterações',
         S.mode === 'install'
-            ? 'Ao instalar, a Lara cria o config.php, prepara o banco e já entra no app. Ajustes de interação (voz, palavras de ativação, sensibilidade) ficam em Configurações.'
+            ? 'Ao instalar, a Lara configura, prepara o banco e já entra no app. Ajustes de interação (voz, palavras de ativação, sensibilidade) ficam em Configurações.'
             : 'O config.php será regravado com as novas chaves e modelos. O histórico e as preferências continuam como estão.',
         h('dl', { class: 'review' }, rows.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })])),
     );

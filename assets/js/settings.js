@@ -41,7 +41,7 @@ const SECTIONS = [
     ]],
 ];
 
-export const LOCAL_KEYS = { mic: 'lara.mic', walk: 'lara.walk', wake: 'lara.wake' };
+export const LOCAL_KEYS = { mic: 'lara.mic', walk: 'lara.walk', wake: 'lara.wake', noise: 'lara.noise' };
 
 export class SettingsPanel {
     constructor(root, { onPreview }) {
@@ -85,6 +85,7 @@ export class SettingsPanel {
             }
             if (title === 'Voz') fs.append(this.#previewButton());
             if (title === 'Escuta e transcrição') fs.append(...(await this.#deviceFields()));
+            if (title === 'Memória') fs.append(this.#localCheck(LOCAL_KEYS.noise, 'Mostrar ruído no histórico', 'Exibe, esmaecidas, as falas catalogadas como ruído (TV, conversas alheias, frases soltas). Vale só para este aparelho.'));
             frag.append(fs);
         }
         frag.append(this.#aiSummary());
@@ -220,22 +221,23 @@ export class SettingsPanel {
         } catch { /* sem permissão ainda */ }
         mic.append(sel, Object.assign(document.createElement('small'), { textContent: 'Escolha o fone Bluetooth para falar andando.' }));
 
-        const check = (key, text, help) => {
-            const l = document.createElement('label');
-            l.className = 'field check';
-            l.innerHTML = `<span>${text}</span>`;
-            const i = document.createElement('input');
-            i.type = 'checkbox';
-            i.dataset.local = key;
-            i.checked = localStorage.getItem(key) === '1';
-            l.append(i, Object.assign(document.createElement('small'), { textContent: help }));
-            return l;
-        };
         return [
             mic,
-            check(LOCAL_KEYS.walk, 'Modo caminhada', 'Mantém a escuta com a tela bloqueada (Android) e liga os botões do fone: play/pause liga e pausa a Lara.'),
-            check(LOCAL_KEYS.wake, 'Manter tela ligada', 'Impede que a tela apague enquanto a Lara escuta.'),
+            this.#localCheck(LOCAL_KEYS.walk, 'Modo caminhada', 'Mantém a escuta com a tela bloqueada (Android) e liga os botões do fone: play/pause liga e pausa a Lara.'),
+            this.#localCheck(LOCAL_KEYS.wake, 'Manter tela ligada', 'Impede que a tela apague enquanto a Lara escuta.'),
         ];
+    }
+
+    #localCheck(key, text, help) {
+        const l = document.createElement('label');
+        l.className = 'field check';
+        l.innerHTML = `<span>${text}</span>`;
+        const i = document.createElement('input');
+        i.type = 'checkbox';
+        i.dataset.local = key;
+        i.checked = localStorage.getItem(key) === '1';
+        l.append(i, Object.assign(document.createElement('small'), { textContent: help }));
+        return l;
     }
 
     readLocal() {

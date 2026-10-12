@@ -60,9 +60,6 @@ textarea { resize: vertical; }
 
 /* ---------- feed ---------- */
 .feed-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
-.feed-tools { display: flex; justify-content: flex-end; padding: .4rem 1rem; font-size: .8rem; color: var(--muted); }
-.toggle { display: inline-flex; gap: .35rem; align-items: center; }
-.toggle input { width: auto; }
 .feed { list-style: none; margin: 0; padding: .5rem 1rem 2rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: .55rem; }
 .msg { max-width: 88%; padding: .55rem .8rem; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }
 .msg p { margin: .15rem 0 0; white-space: pre-wrap; line-height: 1.4; }
