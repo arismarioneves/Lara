@@ -260,7 +260,7 @@ async function runClientChecks() {
     clientChecks = [
         {
             label: 'Pasta privada protegida', required: true, ok: protectedOk,
-            detail: protectedOk ? 'storage/ e config.php bloqueados pelo .htaccess'
+            detail: protectedOk ? 'Arquivos privados bloqueados para acesso pela web'
                 : 'storage/ está acessível pela web: o Apache precisa de AllowOverride All e mod_rewrite',
         },
         {
@@ -327,7 +327,7 @@ function renderDb() {
     });
     return section(
         'Banco de dados',
-        'Onde a Lara guarda as falas catalogadas, as respostas e as suas preferências. Os áudios ficam em arquivos na pasta protegida storage/.',
+        'Onde a Lara guarda as falas catalogadas, as respostas e as suas preferências. Os áudios ficam em arquivos numa pasta protegida do servidor.',
         h('div', { class: 'grid two' },
             field('Servidor', bind('host'), 'Em hospedagens, geralmente localhost.'),
             field('Porta', bind('port', 'number', { min: 1, max: 65535 })),
@@ -646,7 +646,7 @@ function renderReview() {
         S.mode === 'install' ? 'Tudo pronto' : 'Revisar alterações',
         S.mode === 'install'
             ? 'Ao instalar, a Lara configura, prepara o banco e já entra no app. Ajustes de interação (voz, palavras de ativação, sensibilidade) ficam em Configurações.'
-            : 'O config.php será regravado com as novas chaves e modelos. O histórico e as preferências continuam como estão.',
+            : 'As configurações serão atualizadas com as novas chaves e modelos. O histórico e as preferências continuam como estão.',
         h('dl', { class: 'review' }, rows.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })])),
     );
 }

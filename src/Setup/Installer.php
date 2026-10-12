@@ -46,7 +46,7 @@ final class Installer
             [
                 'id' => 'config', 'label' => 'Pasta do projeto gravável', 'required' => false,
                 'ok' => is_writable($root),
-                'detail' => is_writable($root) ? 'o config.php será criado automaticamente' : 'sem permissão: no fim você copia o config.php gerado manualmente',
+                'detail' => is_writable($root) ? 'a configuração será gravada automaticamente' : 'sem permissão: no fim você copia o config.php gerado manualmente',
             ],
             [
                 'id' => 'https', 'label' => 'HTTPS', 'required' => false, 'ok' => $https || $local,
@@ -136,7 +136,7 @@ final class Installer
             ConfigFile::write($config, true);
         } catch (\RuntimeException $e) {
             if (is_file(Config::FILE)) {
-                throw new \InvalidArgumentException('Já existe um config.php: a Lara já foi instalada');
+                throw new \InvalidArgumentException('A Lara já foi instalada');
             }
             return ['written' => false, 'content' => ConfigFile::render($config)];
         }

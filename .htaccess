@@ -39,7 +39,8 @@ AddDefaultCharset utf-8
     Header always set Referrer-Policy "same-origin"
     Header always set X-Frame-Options "DENY"
     Header always set Permissions-Policy "microphone=(self), camera=(), geolocation=()"
-    <FilesMatch "^sw\.js$">
+    # Os módulos importados pelo app.js não levam ?v=: sem revalidação o navegador mistura versões
+    <FilesMatch "\.(js|css|webmanifest)$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
 </IfModule>
