@@ -35,7 +35,7 @@ textarea { resize: vertical; }
 .top { display: flex; align-items: center; gap: .6rem; padding: .8rem 1rem; }
 .top h1 { font-size: 1.15rem; margin: 0; font-weight: 600; }
 .badge { font-size: .72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: .15rem .55rem; }
-.top .icon { margin-left: auto; }
+.top #lock { margin-left: auto; }
 
 /* ---------- palco ---------- */
 .app { flex: 1; display: flex; flex-direction: column; min-height: 0; width: min(720px, 100%); margin: 0 auto; }

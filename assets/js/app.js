@@ -278,11 +278,17 @@ $('open-settings').addEventListener('click', async () => {
     dialog.showModal();
 });
 $('save').addEventListener('click', () => saveSettings().catch((err) => toast(err.message)));
-$('logout').addEventListener('click', async () => {
-    await listener.pause();
-    await api.logout();
+/** Bloqueia: para escuta e voz, encerra a sessão no servidor e volta para a tela de senha. */
+async function lock() {
+    voice.stop();
+    await listener.pause().catch(() => {});
+    await companion.setWalkMode(false).catch(() => {});
+    await companion.setWakeLock(false).catch(() => {});
+    await api.logout().catch(() => {});
     location.reload();
-});
+}
+$('lock').addEventListener('click', lock);
+$('logout').addEventListener('click', lock);
 if ('speechSynthesis' in window) speechSynthesis.addEventListener?.('voiceschanged', () => dialog.open && panel.render());
 
 // ---------- início ----------
