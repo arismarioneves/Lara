@@ -3,6 +3,7 @@ import { Listener } from './listener.js';
 import { Voice } from './voice.js';
 import { Companion } from './companion.js';
 import { SettingsPanel, LOCAL_KEYS } from './settings.js';
+import { micPermission, watchMicPermission, requestMic, micProblem, renderMicHelp } from './mic.js';
 import { encodeWav, levelDb } from './wav.js';
 
 const $ = (id) => document.getElementById(id);
@@ -10,6 +11,7 @@ const orb = $('orb');
 const statusEl = $('status');
 const feed = $('feed');
 const meter = $('meter');
+const micHelp = $('mic-help');
 
 const listener = new Listener();
 const voice = new Voice();
@@ -183,12 +185,39 @@ function toast(text) {
     setTimeout(() => { statusEl.classList.remove('warn'); idleState(); }, 4000);
 }
 
+// ---------- microfone ----------
+/** Mostra o cartão com o que fazer; false quando o erro não é do microfone. */
+async function showMicHelp(err) {
+    const problem = micProblem(err, await micPermission());
+    if (!problem) return false;
+    renderMicHelp(micHelp, problem, () => toggleListening(true));
+    setState('error', '');
+    return true;
+}
+
+function hideMicHelp() {
+    micHelp.hidden = true;
+    micHelp.replaceChildren();
+}
+
+watchMicPermission((state) => {
+    if (state === 'granted' && !micHelp.hidden) {
+        hideMicHelp();
+        if (!listener.running) setState('off', 'Microfone liberado · toque para ouvir');
+    } else if (state === 'denied' && !listener.running) {
+        showMicHelp(new DOMException('', 'NotAllowedError'));
+    }
+});
+
 // ---------- ligar / pausar ----------
 async function toggleListening(force) {
     const on = force ?? !listener.running;
     try {
         if (on) {
             setState('thinking', 'Abrindo microfone…');
+            // Pede a permissão já no toque, antes de carregar o VAD: o pedido aparece na hora
+            if (await micPermission() !== 'granted') await requestMic();
+            hideMicHelp();
             ensureWorker();
             await listener.start();
             await companion.setWalkMode(localStorage.getItem(LOCAL_KEYS.walk) === '1', settings.assistant_name);
@@ -198,7 +227,7 @@ async function toggleListening(force) {
             await companion.setWakeLock(false);
         }
     } catch (err) {
-        setState('error', err.name === 'NotAllowedError' ? 'Permita o uso do microfone' : err.message);
+        if (!await showMicHelp(err)) setState('error', err.message);
         return;
     }
     companion.setListeningState(listener.running);
@@ -300,6 +329,7 @@ if ('speechSynthesis' in window) speechSynthesis.addEventListener?.('voiceschang
         applyNoiseVisibility();
         await loadHistory();
         idleState();
+        if (await micPermission() === 'denied') await showMicHelp(new DOMException('', 'NotAllowedError'));
     } catch (err) {
         setState('error', err.message);
     }

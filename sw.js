@@ -1,11 +1,12 @@
 // Service worker: instalação como PWA + cache dos arquivos estáticos e das bibliotecas da CDN.
 // API e páginas sempre vão à rede (dados privados nunca ficam em cache).
-const VERSION = 'lara-v1';
+const VERSION = 'lara-v2';
 const SHELL = [
     'assets/app.css',
     'assets/js/app.js',
     'assets/js/api.js',
     'assets/js/listener.js',
+    'assets/js/mic.js',
     'assets/js/voice.js',
     'assets/js/companion.js',
     'assets/js/settings.js',
