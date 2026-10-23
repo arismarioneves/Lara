@@ -190,7 +190,9 @@ function toast(text) {
 async function showMicHelp(err) {
     const problem = micProblem(err, await micPermission());
     if (!problem) return false;
-    renderMicHelp(micHelp, problem, () => toggleListening(true));
+    // Cartão já aberto = nova tentativa falhou: avisa, senão o toque parece não fazer nada
+    const note = micHelp.hidden ? '' : `Ainda bloqueado (${new Date().toLocaleTimeString('pt-BR')}). Libere pelos passos acima e tente de novo.`;
+    renderMicHelp(micHelp, problem, () => toggleListening(true), note);
     setState('error', '');
     return true;
 }

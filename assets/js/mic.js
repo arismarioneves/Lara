@@ -18,10 +18,23 @@ export async function watchMicPermission(onChange) {
     } catch { /* sem Permissions API: o botão de tentar de novo cobre */ }
 }
 
-/** Abre e fecha o microfone só para o navegador mostrar o pedido de permissão. */
+/** Recusa mais rápida que isso não passou por um pedido na tela: ninguém lê e toca tão rápido. */
+const SILENT_DENIAL_MS = 600;
+
+/**
+ * Abre e fecha o microfone só para o navegador mostrar o pedido de permissão.
+ * Recusa instantânea sai marcada com `silent`: o navegador bloqueou sem perguntar.
+ */
 export async function requestMic() {
     if (!navigator.mediaDevices?.getUserMedia) throw new DOMException('getUserMedia indisponível', 'SecurityError');
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const started = performance.now();
+    let stream;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+        if (err?.name === 'NotAllowedError' && performance.now() - started < SILENT_DENIAL_MS) err.silent = true;
+        throw err;
+    }
     for (const track of stream.getTracks()) track.stop();
 }
 
@@ -40,6 +53,14 @@ export function micProblem(err, permission) {
             }
         // fallthrough: com HTTPS, SecurityError é bloqueio de permissão
         case 'NotAllowedError':
+            if (err.silent) {
+                return {
+                    title: 'O navegador recusou sem perguntar',
+                    text: 'O pedido de permissão nem chegou a aparecer: o microfone está bloqueado para este site ou para o próprio navegador no sistema. Para liberar:',
+                    steps: unblockSteps(),
+                    action: 'Já liberei, tentar de novo',
+                };
+            }
             if (permission === 'prompt') {
                 return {
                     title: 'Permita o microfone',
@@ -79,8 +100,11 @@ export function micProblem(err, permission) {
     }
 }
 
-/** Preenche o cartão de ajuda; onAction roda no toque do botão (gesto do usuário). */
-export function renderMicHelp(container, problem, onAction) {
+/**
+ * Preenche o cartão de ajuda; onAction roda no toque do botão (gesto do usuário).
+ * `note` aparece em destaque (ex.: a nova tentativa falhou do mesmo jeito).
+ */
+export function renderMicHelp(container, problem, onAction, note = '') {
     const el = (tag, text) => Object.assign(document.createElement(tag), text ? { textContent: text } : {});
     const parts = [el('h2', problem.title), el('p', problem.text)];
 
@@ -95,10 +119,24 @@ export function renderMicHelp(container, problem, onAction) {
             parts.push(list);
         }
     }
+    if (note) {
+        const p = el('p', note);
+        p.className = 'note';
+        parts.push(p);
+    }
     if (problem.action) {
         const button = el('button', problem.action);
         button.type = 'button';
-        button.addEventListener('click', onAction);
+        button.addEventListener('click', async () => {
+            button.disabled = true;
+            button.textContent = 'Aguardando o navegador…';
+            try {
+                await onAction();
+            } finally {
+                button.disabled = false;
+                button.textContent = problem.action;
+            }
+        });
         parts.push(button);
     }
     container.replaceChildren(...parts);
