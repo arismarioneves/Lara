@@ -3,7 +3,7 @@ import { Listener } from './listener.js';
 import { Voice } from './voice.js';
 import { Companion } from './companion.js';
 import { SettingsPanel, LOCAL_KEYS } from './settings.js';
-import { micPermission, watchMicPermission, requestMic, micProblem, renderMicHelp } from './mic.js';
+import { micState, requestMic, micErrorText } from './mic.js';
 import { encodeWav, levelDb } from './wav.js';
 
 const $ = (id) => document.getElementById(id);
@@ -186,29 +186,21 @@ function toast(text) {
 }
 
 // ---------- microfone ----------
-/** Mostra o cartão com o que fazer; false quando o erro não é do microfone. */
-async function showMicHelp(err) {
-    const problem = micProblem(err, await micPermission());
-    if (!problem) return false;
-    // Cartão já aberto = nova tentativa falhou: avisa, senão o toque parece não fazer nada
-    const note = micHelp.hidden ? '' : `Ainda bloqueado (${new Date().toLocaleTimeString('pt-BR')}). Libere pelos passos acima e tente de novo.`;
-    renderMicHelp(micHelp, problem, () => toggleListening(true), note);
-    setState('error', '');
-    return true;
+function showMicHelp(text) {
+    $('mic-help-text').textContent = text;
+    micHelp.hidden = false;
+    setState('off', '');
 }
 
-function hideMicHelp() {
-    micHelp.hidden = true;
-    micHelp.replaceChildren();
-}
-
-watchMicPermission((state) => {
-    if (state === 'granted' && !micHelp.hidden) {
-        hideMicHelp();
-        if (!listener.running) setState('off', 'Microfone liberado · toque para ouvir');
-    } else if (state === 'denied' && !listener.running) {
-        showMicHelp(new DOMException('', 'NotAllowedError'));
+$('mic-allow').addEventListener('click', async () => {
+    try {
+        await requestMic();
+    } catch (err) {
+        showMicHelp(`${micErrorText(err) ?? 'Microfone indisponível'} (${err.message})`);
+        return;
     }
+    micHelp.hidden = true;
+    toggleListening(true);
 });
 
 // ---------- ligar / pausar ----------
@@ -216,10 +208,10 @@ async function toggleListening(force) {
     const on = force ?? !listener.running;
     try {
         if (on) {
+            const state = await micState();
+            if (state === 'prompt' || state === 'denied') return showMicHelp('A Lara precisa do microfone para ouvir.');
             setState('thinking', 'Abrindo microfone…');
-            // Pede a permissão já no toque, antes de carregar o VAD: o pedido aparece na hora
-            if (await micPermission() !== 'granted') await requestMic();
-            hideMicHelp();
+            micHelp.hidden = true;
             ensureWorker();
             await listener.start();
             await companion.setWalkMode(localStorage.getItem(LOCAL_KEYS.walk) === '1', settings.assistant_name);
@@ -229,7 +221,9 @@ async function toggleListening(force) {
             await companion.setWakeLock(false);
         }
     } catch (err) {
-        if (!await showMicHelp(err)) setState('error', err.message);
+        const text = micErrorText(err);
+        if (text) showMicHelp(text);
+        else setState('error', err.message);
         return;
     }
     companion.setListeningState(listener.running);
@@ -331,7 +325,6 @@ if ('speechSynthesis' in window) speechSynthesis.addEventListener?.('voiceschang
         applyNoiseVisibility();
         await loadHistory();
         idleState();
-        if (await micPermission() === 'denied') await showMicHelp(new DOMException('', 'NotAllowedError'));
     } catch (err) {
         setState('error', err.message);
     }

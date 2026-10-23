@@ -63,7 +63,10 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' https://c
         <button class="orb" id="orb" data-state="off" aria-label="Ligar ou pausar a escuta"><span></span></button>
         <p class="status" id="status">Toque para começar a ouvir</p>
         <div class="meter" aria-hidden="true"><i id="meter"></i></div>
-        <div class="mic-help" id="mic-help" role="alert" hidden></div>
+        <div class="mic-help" id="mic-help" hidden>
+            <p id="mic-help-text"></p>
+            <button type="button" id="mic-allow">Permitir microfone</button>
+        </div>
     </section>
 
     <section class="feed-wrap">

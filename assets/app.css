@@ -58,15 +58,9 @@ textarea { resize: vertical; }
 .meter { width: 120px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .meter i { --level: 0; display: block; height: 100%; width: calc(var(--level) * 100%); background: var(--ok); transition: width .08s linear; }
 
-.mic-help { width: min(440px, 100%); display: grid; gap: .6rem; padding: .9rem 1rem; border: 1px solid var(--warn); border-radius: var(--radius); background: var(--panel); font-size: .9rem; line-height: 1.4; }
+.mic-help { display: grid; justify-items: center; gap: .6rem; text-align: center; }
 .mic-help[hidden] { display: none; }
-.mic-help h2 { margin: 0; font-size: 1rem; }
-.mic-help p.note { color: var(--warn); }
-.mic-help p { margin: 0; color: var(--muted); }
-.mic-help ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .35rem; }
-.mic-help summary { cursor: pointer; color: var(--accent); }
-.mic-help details ol { margin-top: .5rem; }
-.mic-help button { justify-self: start; }
+.mic-help p { margin: 0; color: var(--muted); font-size: .9rem; }
 
 /* ---------- feed ---------- */
 .feed-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
