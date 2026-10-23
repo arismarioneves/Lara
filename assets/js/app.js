@@ -208,9 +208,9 @@ async function toggleListening(force) {
     const on = force ?? !listener.running;
     try {
         if (on) {
-            const state = await micState();
-            if (state === 'prompt' || state === 'denied') return showMicHelp('A Lara precisa do microfone para ouvir.');
             setState('thinking', 'Abrindo microfone…');
+            // Pede já no toque, antes de carregar o VAD: o pedido aparece na hora
+            if (await micState() !== 'granted') await requestMic();
             micHelp.hidden = true;
             ensureWorker();
             await listener.start();

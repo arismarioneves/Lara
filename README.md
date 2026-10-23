@@ -120,7 +120,7 @@ Sugestões com OpenRouter: `google/gemini-3.8-flash` (conversa, raciocínio baix
 
 O que o PWA consegue hoje:
 
-- **Permissão do microfone**: sem permissão, a esfera mostra o botão *Permitir microfone*, que dispara o pedido do navegador.
+- **Permissão do microfone**: o pedido aparece no primeiro toque na esfera. Se falhar, a Lara diz o motivo e mostra *Tentar de novo*.
 - **Microfone do fone**: escolha o fone Bluetooth em *Configurações → Este aparelho*.
 - **Interromper falando**: com fone não há eco, então ative *Interromper a Lara falando por cima* — sua voz corta a resposta dela. Sem essa opção, o que é captado enquanto ela fala é descartado como eco.
 - **Modo caminhada**: toca um áudio silencioso em loop para o sistema tratar a página como "tocando mídia". No Android/Chrome isso costuma manter a captura com a tela bloqueada e liga os botões do fone/relógio (play/pause liga e pausa a Lara pela Media Session). O comportamento em segundo plano varia por fabricante e economia de bateria — teste no seu aparelho.

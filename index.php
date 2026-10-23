@@ -65,7 +65,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' https://c
         <div class="meter" aria-hidden="true"><i id="meter"></i></div>
         <div class="mic-help" id="mic-help" hidden>
             <p id="mic-help-text"></p>
-            <button type="button" id="mic-allow">Permitir microfone</button>
+            <button type="button" id="mic-allow">Tentar de novo</button>
         </div>
     </section>
 
