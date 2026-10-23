@@ -19,7 +19,7 @@ export async function watchMicPermission(onChange) {
 }
 
 /** Recusa mais rápida que isso não passou por um pedido na tela: ninguém lê e toca tão rápido. */
-const SILENT_DENIAL_MS = 600;
+const SILENT_DENIAL_MS = 1000;
 
 /**
  * Abre e fecha o microfone só para o navegador mostrar o pedido de permissão.
@@ -56,8 +56,8 @@ export function micProblem(err, permission) {
             if (err.silent) {
                 return {
                     title: 'O navegador recusou sem perguntar',
-                    text: 'O pedido de permissão nem chegou a aparecer: o microfone está bloqueado para este site ou para o próprio navegador no sistema. Para liberar:',
-                    steps: unblockSteps(),
+                    text: 'O pedido de permissão nem chegou a aparecer, então o bloqueio está no aparelho (sistema ou navegador), não no site. Para liberar:',
+                    steps: unblockSteps(true),
                     action: 'Já liberei, tentar de novo',
                 };
             }
@@ -143,7 +143,8 @@ export function renderMicHelp(container, problem, onAction, note = '') {
     container.hidden = false;
 }
 
-function unblockSteps() {
+/** `silent`: o navegador recusou sem perguntar, então o bloqueio está no sistema, não no site. */
+function unblockSteps(silent = false) {
     const ua = navigator.userAgent;
     const host = location.host;
     const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -164,6 +165,14 @@ function unblockSteps() {
             'Toque em aA (ou no ícone de menu) na barra de endereço → Ajustes do Site → Microfone → Permitir.',
             'Se não houver essa opção: Ajustes do iPhone → Safari → Microfone → Permitir.',
             'Volte aqui e toque no botão abaixo.',
+        ];
+    }
+    if (/Android/.test(ua) && silent) {
+        return [
+            'Puxe o painel rápido do Android (deslize do topo da tela) e confira se "Acesso ao microfone" está ligado.',
+            'Configurações do Android → Apps → Chrome (ou o navegador que você usa) → Permissões → Microfone → Permitir só durante o uso do app.',
+            'Em celular corporativo, o microfone pode estar bloqueado pela empresa (perfil de trabalho); nesse caso, fale com o TI.',
+            'Volte aqui e toque no botão abaixo: agora o navegador deve mostrar o pedido.',
         ];
     }
     if (/Android/.test(ua) && installed) {
