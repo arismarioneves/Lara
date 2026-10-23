@@ -196,7 +196,7 @@ $('mic-allow').addEventListener('click', async () => {
     try {
         await requestMic();
     } catch (err) {
-        showMicHelp(`${micErrorText(err) ?? 'Microfone indisponível'} (${err.message})`);
+        showMicHelp(micErrorText(err) ?? 'Não foi possível abrir o microfone.');
         return;
     }
     micHelp.hidden = true;

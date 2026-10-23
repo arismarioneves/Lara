@@ -17,18 +17,18 @@ export async function requestMic() {
 
 /** Texto curto para falha do microfone; null quando o erro é de outra coisa. */
 export function micErrorText(err) {
-    if (!navigator.mediaDevices) return 'O microfone exige HTTPS';
+    if (!navigator.mediaDevices) return 'O microfone exige HTTPS.';
     switch (err?.name) {
         case 'NotAllowedError':
         case 'SecurityError':
-            return 'Microfone não liberado';
+            return 'Microfone bloqueado. Libere o microfone para o navegador nas configurações do celular e do site.';
         case 'NotFoundError':
-            return 'Nenhum microfone encontrado';
+            return 'Nenhum microfone encontrado.';
         case 'NotReadableError':
         case 'AbortError':
-            return 'Microfone em uso por outro app';
+            return 'Microfone em uso por outro app.';
         case 'OverconstrainedError':
-            return 'Microfone escolhido indisponível';
+            return 'O microfone escolhido em Configurações não está disponível.';
         default:
             return null;
     }
