@@ -24,9 +24,11 @@ final class Transcriber
     /** @param list<string> $vocabulary nomes próprios para enviesar o reconhecimento */
     public function transcribe(string $bytes, string $mime, string $language, array $vocabulary = []): string
     {
-        return $this->provider === 'gemini'
-            ? $this->gemini($bytes, $mime, $language, $vocabulary)
-            : $this->openAi($bytes, $mime, $language, $vocabulary);
+        return match ($this->provider) {
+            'gemini' => $this->gemini($bytes, $mime, $language, $vocabulary),
+            'mistral' => $this->mistral($bytes, $mime, $language, $vocabulary),
+            default => $this->openAi($bytes, $mime, $language, $vocabulary),
+        };
     }
 
     private function gemini(string $bytes, string $mime, string $language, array $vocabulary): string
@@ -71,5 +73,89 @@ final class Transcriber
         }
         $res = Http::postMultipart($p['base_url'] . '/audio/transcriptions', ['Authorization' => 'Bearer ' . $p['api_key']], $fields, 30);
         return trim((string)($res['text'] ?? ''));
+    }
+
+    /**
+     * Mistral Voxtral: transcrição com diarização e referências de falante opcionais.
+     * Quando há speaker_references, o texto retornado já identifica quem falou.
+     */
+    private function mistral(string $bytes, string $mime, string $language, array $vocabulary): string
+    {
+        $p = Config::provider('mistral');
+        $ext = str_contains($mime, 'wav') ? 'wav' : 'webm';
+        $fields = [
+            'file' => new \CURLStringFile($bytes, "speech.$ext", $mime),
+            'model' => $this->model,
+            'language' => strtolower(substr($language, 0, 2)),
+        ];
+        // Vocabulário técnico via context bias
+        if ($vocabulary) {
+            $fields['context_prompt'] = implode(', ', $vocabulary);
+        }
+        // Diarização com referências de falante (se configuradas)
+        $refs = self::speakerReferences();
+        if ($refs !== null) {
+            $fields['diarize'] = 'true';
+            $fields['timestamp_granularities'] = 'segment';
+            $fields['speaker_references'] = json_encode($refs, JSON_UNESCAPED_UNICODE);
+        }
+        $res = Http::postMultipart(
+            $p['base_url'] . '/audio/transcriptions',
+            ['Authorization' => 'Bearer ' . $p['api_key']],
+            $fields,
+            30
+        );
+        // Com diarização, concatena segmentos com identificação de falante
+        if ($refs !== null && !empty($res['segments'])) {
+            return self::formatDiarized($res['segments']);
+        }
+        return trim((string)($res['text'] ?? ''));
+    }
+
+    /**
+     * Carrega referências de falante da tabela speaker_references.
+     * @return array<string, string>|null mapa nome→base64 do áudio, ou null se não houver
+     */
+    private static function speakerReferences(): ?array
+    {
+        $rows = \Lara\Db::all('SELECT name, audio_path FROM speaker_references ORDER BY name');
+        if (empty($rows)) {
+            return null;
+        }
+        $refs = [];
+        foreach ($rows as $row) {
+            $abs = Config::storagePath($row['audio_path']);
+            if (is_file($abs)) {
+                $refs[$row['name']] = base64_encode((string)file_get_contents($abs));
+            }
+        }
+        return empty($refs) ? null : $refs;
+    }
+
+    /** Formata segmentos diarizados como texto com prefixo de falante. */
+    private static function formatDiarized(array $segments): string
+    {
+        $lines = [];
+        $current = null;
+        $buffer = '';
+        foreach ($segments as $seg) {
+            $speaker = (string)($seg['speaker_id'] ?? '');
+            $text = trim((string)($seg['text'] ?? ''));
+            if ($text === '') continue;
+            if ($speaker !== $current) {
+                if ($buffer !== '') {
+                    $lines[] = $buffer;
+                }
+                $current = $speaker;
+                $label = $speaker !== '' ? $speaker : '?';
+                $buffer = "[$label] $text";
+            } else {
+                $buffer .= ' ' . $text;
+            }
+        }
+        if ($buffer !== '') {
+            $lines[] = $buffer;
+        }
+        return implode("\n", $lines);
     }
 }

@@ -8,6 +8,7 @@
 /storage/**
 !/storage/**/
 !/storage/.htaccess
+!/storage/**/.gitkeep
 !/storage/**/index.php
 
 # Ferramentas

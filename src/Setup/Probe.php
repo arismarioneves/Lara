@@ -19,6 +19,19 @@ final class Probe
         'Rasalgethi', 'Alnilam', 'Zubenelgenubi', 'Sadaltager',
     ];
     public const OPENAI_VOICES = ['coral', 'nova', 'shimmer', 'sage', 'alloy', 'ash', 'ballad', 'echo', 'fable', 'onyx', 'verse'];
+    public const MISTRAL_VOICES = [
+        ['id' => 'voice_480', 'name' => 'Gabriela (pt)'],
+        ['id' => 'voice_478', 'name' => 'Sheila (en-US)'],
+        ['id' => 'voice_447', 'name' => 'Margaret (en-US)'],
+        ['id' => 'voice_485', 'name' => 'Rob (en-US)'],
+        ['id' => 'voice_3150', 'name' => 'James (en-US)'],
+        ['id' => 'voice_1787', 'name' => 'Mary (en-UK)'],
+        ['id' => 'voice_1786', 'name' => 'Sky (en-UK)'],
+        ['id' => 'voice_592', 'name' => 'Marie (fr)'],
+        ['id' => 'voice_483', 'name' => 'Elena (es)'],
+        ['id' => 'voice_481', 'name' => 'Heidi (de)'],
+        ['id' => 'voice_482', 'name' => 'Lorenzo (it)'],
+    ];
 
     /** @return array{models: array{chat: list<array>, stt: list<array>, tts: list<array>, decisions: list<array>}} */
     public static function run(string $provider, string $key, string $baseUrl): array
@@ -34,6 +47,7 @@ final class Probe
                 'typesafe' => self::typesafe($base, $key),
                 'groq', 'openai', 'ollama' => self::openAiLike($provider, $base, $key),
                 'elevenlabs' => self::elevenLabs($base, $key),
+                'mistral' => self::mistral($base, $key),
                 default => throw new \InvalidArgumentException("Provedor desconhecido: $provider"),
             };
         } catch (ProviderException $e) {
@@ -152,6 +166,23 @@ final class Probe
         foreach (Http::getJson("$base/models", $auth) as $m) {
             if (!empty($m['can_do_text_to_speech'])) {
                 $out['tts'][] = ['id' => (string)$m['model_id'], 'label' => (string)($m['name'] ?? $m['model_id']), 'voices' => $voices];
+            }
+        }
+        return $out;
+    }
+
+    private static function mistral(string $base, string $key): array
+    {
+        $auth = ['Authorization' => 'Bearer ' . $key];
+        $res = Http::getJson("$base/models", $auth);
+        $out = ['stt' => [], 'tts' => []];
+        foreach ((array)($res['data'] ?? []) as $m) {
+            $id = (string)($m['id'] ?? '');
+            if ($id === '') continue;
+            if (str_contains($id, 'transcribe') && !str_contains($id, 'realtime')) {
+                $out['stt'][] = ['id' => $id];
+            } elseif (str_contains($id, 'tts') && !str_contains($id, 'realtime')) {
+                $out['tts'][] = ['id' => $id, 'voices' => self::MISTRAL_VOICES];
             }
         }
         return $out;

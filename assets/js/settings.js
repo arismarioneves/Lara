@@ -1,5 +1,6 @@
 // Tela de configurações: só o que é interação direta. Provedores e modelos de IA ficam em "Reconfigurar IA".
 import { browserVoices } from './voice.js';
+import { encodeWav } from './wav.js';
 import { listMicrophones } from './listener.js';
 
 const LABELS = {
@@ -88,6 +89,7 @@ export class SettingsPanel {
             if (title === 'Memória') fs.append(this.#localCheck(LOCAL_KEYS.noise, 'Mostrar ruído no histórico', 'Exibe, esmaecidas, as falas catalogadas como ruído (TV, conversas alheias, frases soltas). Vale só para este aparelho.'));
             frag.append(fs);
         }
+        if (this.ai?.stt_provider === 'mistral') frag.append(await this.#speakerRefsSection());
         frag.append(this.#aiSummary());
         this.root.replaceChildren(frag);
         this.root.querySelector('[data-key="stt_mode"]')?.addEventListener('change', () => {
@@ -246,5 +248,163 @@ export class SettingsPanel {
             out[el.dataset.local] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
         }
         return out;
+    }
+
+    async #speakerRefsSection() {
+        const section = document.createElement('fieldset');
+        section.className = 'section';
+        const legend = document.createElement('legend');
+        legend.textContent = 'Reconhecimento de falante';
+        section.append(legend);
+
+        const help = document.createElement('p');
+        help.className = 'help';
+        help.textContent = 'Grave amostras de voz (3–15 s) para que a Lara identifique quem está falando. Até 8 falantes. Funciona com transcrição Mistral.';
+        section.append(help);
+
+        let speakers = [];
+        try {
+            const res = await fetch('api/speakers', { credentials: 'same-origin' });
+            const data = await res.json();
+            speakers = data.speakers || [];
+        } catch { /* endpoint indisponível */ }
+
+        const count = document.createElement('span');
+        count.className = 'speaker-count';
+        count.textContent = `${speakers.length}/8 referências`;
+        section.append(count);
+
+        const list = document.createElement('div');
+        list.className = 'speaker-list';
+        section.append(list);
+
+        const refresh = async () => {
+            try {
+                const res = await fetch('api/speakers', { credentials: 'same-origin' });
+                const data = await res.json();
+                speakers = data.speakers || [];
+            } catch { /* ignora */ }
+            list.replaceChildren();
+            count.textContent = `${speakers.length}/8 referências`;
+            for (const s of speakers) {
+                const row = document.createElement('div');
+                row.className = 'speaker-row';
+                const label = document.createElement('span');
+                label.textContent = `${s.name} (${(s.duration_ms / 1000).toFixed(0)} s)`;
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'btn-small btn-danger';
+                del.textContent = 'Remover';
+                del.addEventListener('click', async () => {
+                    del.disabled = true;
+                    const csrf = document.querySelector('meta[name=csrf]')?.content || '';
+                    await fetch('api/speakers', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                        body: JSON.stringify({ id: s.id }),
+                        credentials: 'same-origin',
+                    });
+                    await refresh();
+                });
+                row.append(label, del);
+                list.append(row);
+            }
+        };
+
+        const form = document.createElement('div');
+        form.className = 'speaker-form';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Nome do falante';
+        nameInput.maxLength = 64;
+
+        const recordBtn = document.createElement('button');
+        recordBtn.type = 'button';
+        recordBtn.className = 'ghost';
+        recordBtn.textContent = 'Gravar';
+
+        const status = document.createElement('span');
+        status.className = 'speaker-status';
+
+        let recorder = null;
+        let chunks = [];
+        let startTime = 0;
+
+        recordBtn.addEventListener('click', async () => {
+            if (recorder && recorder.state === 'recording') {
+                recorder.stop();
+                return;
+            }
+            const name = nameInput.value.trim();
+            if (!name) { status.textContent = 'Informe o nome do falante'; return; }
+            if (speakers.length >= 8 && !speakers.some(sp => sp.name === name)) {
+                status.textContent = 'Limite de 8 referências atingido';
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                chunks = [];
+                recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+                recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+                recorder.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < 3000) {
+                        status.textContent = 'Muito curto (mínimo 3 s)';
+                        recordBtn.textContent = 'Gravar';
+                        return;
+                    }
+                    status.textContent = 'Convertendo…';
+                    recordBtn.disabled = true;
+                    try {
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        const arrayBuf = await blob.arrayBuffer();
+                        const audioCtx = new AudioContext({ sampleRate: 16000 });
+                        const decoded = await audioCtx.decodeAudioData(arrayBuf);
+                        const samples = decoded.getChannelData(0);
+                        await audioCtx.close();
+                        const wavBlob = encodeWav(samples, 16000);
+
+                        const fd = new FormData();
+                        fd.append('audio', wavBlob, 'reference.wav');
+                        fd.append('name', name);
+                        fd.append('duration_ms', String(Math.round(elapsed)));
+                        const csrf = document.querySelector('meta[name=csrf]')?.content || '';
+                        const res = await fetch('api/speakers', {
+                            method: 'POST',
+                            headers: { 'X-CSRF-Token': csrf },
+                            body: fd,
+                            credentials: 'same-origin',
+                        });
+                        const data = await res.json();
+                        if (data.error) {
+                            status.textContent = data.error;
+                        } else {
+                            status.textContent = 'Salvo!';
+                            nameInput.value = '';
+                            await refresh();
+                        }
+                    } catch (err) {
+                        status.textContent = 'Erro: ' + err.message;
+                    }
+                    recordBtn.textContent = 'Gravar';
+                    recordBtn.disabled = false;
+                };
+                recorder.start();
+                startTime = Date.now();
+                recordBtn.textContent = 'Parar (máx 15 s)';
+                status.textContent = 'Gravando…';
+                setTimeout(() => { if (recorder?.state === 'recording') recorder.stop(); }, 15000);
+            } catch (err) {
+                status.textContent = 'Erro no microfone: ' + err.message;
+            }
+        });
+
+        form.append(nameInput, recordBtn, status);
+        section.append(form);
+
+        await refresh();
+        return section;
     }
 }

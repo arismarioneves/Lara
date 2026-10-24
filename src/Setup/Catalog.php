@@ -84,6 +84,18 @@ final class Catalog
                     'tts' => ['model' => 'gpt-4o-mini-tts'],
                 ],
             ],
+            'mistral' => [
+                'label' => 'Mistral',
+                'tagline' => 'Voxtral 3: transcrição com reconhecimento de falante e vozes expressivas.',
+                'auth' => 'key',
+                'key_url' => 'https://console.mistral.ai/api-keys',
+                'base_url' => 'https://api.mistral.ai/v1',
+                'roles' => ['stt', 'tts'],
+                'defaults' => [
+                    'stt' => ['model' => 'voxtral-mini-transcribe-3'],
+                    'tts' => ['model' => 'voxtral-mini-tts-3-0'],
+                ],
+            ],
             'elevenlabs' => [
                 'label' => 'ElevenLabs',
                 'tagline' => 'Vozes muito naturais, inclusive em português.',
@@ -128,13 +140,13 @@ final class Catalog
                 'title' => 'Transcrição online',
                 'subtitle' => 'opcional',
                 'description' => 'Por padrão a fala vira texto no próprio aparelho, de graça (Whisper local). Um serviço online dá mais precisão; você liga e desliga nas configurações.',
-                'prefer' => ['gemini', 'openrouter', 'groq', 'openai'],
+                'prefer' => ['mistral', 'gemini', 'openrouter', 'groq', 'openai'],
             ],
             'tts' => [
                 'title' => 'Voz',
                 'subtitle' => 'como a Lara fala',
                 'description' => 'A voz do navegador é grátis e instantânea. Vozes de IA soam bem mais naturais e custam centavos por resposta.',
-                'prefer' => ['elevenlabs', 'gemini', 'openrouter', 'openai'],
+                'prefer' => ['elevenlabs', 'mistral', 'gemini', 'openrouter', 'openai'],
             ],
         ];
     }
