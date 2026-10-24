@@ -30,7 +30,7 @@ final class Storage
     /** Caminho absoluto seguro (impede path traversal). */
     public static function resolve(string $rel): ?string
     {
-        if (!preg_match('#^audio/(heard|spoken)/[\w-]+\.(wav|mp3|ogg|webm)$#', $rel)) {
+        if (!preg_match('#^audio/(heard|spoken|references)/[\w-]+\.(wav|mp3|ogg|webm)$#', $rel)) {
             return null;
         }
         $abs = Config::storagePath($rel);

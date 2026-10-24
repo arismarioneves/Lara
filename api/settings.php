@@ -36,6 +36,7 @@ Api::run(static function (): void {
             'main' => Ai::label($ai['main']['provider'], $ai['main']['model']),
             'decider' => $decider,
             'stt' => $ai['stt']['provider'] === '' ? null : Ai::label($ai['stt']['provider'], $ai['stt']['model']),
+            'stt_provider' => $ai['stt']['provider'],
             'tts' => $ai['tts']['provider'] === 'browser' ? 'Voz do navegador' : Ai::label($ai['tts']['provider'], $ai['tts']['model']),
             'tts_provider' => $ai['tts']['provider'],
             'voices' => $ai['tts']['voices'],

@@ -54,6 +54,31 @@ check('modelo com espaço ou aspas é recusado', $throws(fn() => AiConfig::norma
     ['openrouter']
 )));
 
+// ---- Mistral como STT/TTS ----
+$mistralStt = AiConfig::normalize([
+    'main' => ['provider' => 'openrouter', 'model' => 'google/gemini-3.8-flash', 'thinking' => 'low'],
+    'decider' => ['engine' => 'llm', 'provider' => 'openrouter', 'model' => 'google/gemini-3.5-flash-lite', 'thinking' => 'minimal'],
+    'stt' => ['provider' => 'mistral', 'model' => 'voxtral-mini-transcribe-3'],
+    'tts' => ['provider' => 'mistral', 'model' => 'voxtral-mini-tts-3-0', 'voices' => [['id' => 'voice_480', 'name' => 'Gabriela (pt)']]],
+], ['openrouter', 'mistral']);
+check('Mistral aceito como STT', $mistralStt['stt']['provider'] === 'mistral' && $mistralStt['stt']['model'] === 'voxtral-mini-transcribe-3');
+check('Mistral aceito como TTS', $mistralStt['tts']['provider'] === 'mistral' && $mistralStt['tts']['model'] === 'voxtral-mini-tts-3-0');
+check('Mistral vozes preservadas', $mistralStt['tts']['voices'] === [['id' => 'voice_480', 'name' => 'Gabriela (pt)']]);
+check('Mistral não serve de chat', $throws(fn() => AiConfig::normalize(
+    ['main' => ['provider' => 'mistral', 'model' => 'x']] + $onlyOpenRouter,
+    ['openrouter', 'mistral']
+)));
+check('Mistral não serve de decisor', $throws(fn() => AiConfig::normalize(
+    ['decider' => ['engine' => 'llm', 'provider' => 'mistral', 'model' => 'x']] + $onlyOpenRouter,
+    ['openrouter', 'mistral']
+)));
+
+// Catalog: Mistral existe com os papéis certos
+check('Catalog reconhece Mistral STT', \Lara\Setup\Catalog::supports('mistral', 'stt'));
+check('Catalog reconhece Mistral TTS', \Lara\Setup\Catalog::supports('mistral', 'tts'));
+check('Catalog rejeita Mistral chat', !\Lara\Setup\Catalog::supports('mistral', 'chat'));
+check('Catalog rejeita Mistral decider', !\Lara\Setup\Catalog::supports('mistral', 'decider'));
+
 $minimal = AiConfig::normalize([
     'main' => $onlyOpenRouter['main'],
     'decider' => $onlyOpenRouter['decider'],

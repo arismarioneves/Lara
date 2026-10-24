@@ -15,6 +15,7 @@ final class Speech
         'openai' => ['model' => 'gpt-4o-mini-tts', 'voice' => 'coral'],
         'openrouter' => ['model' => 'google/gemini-3.8-flash-lite-tts', 'voice' => 'Kore'],
         'elevenlabs' => ['model' => 'eleven_flash_v2_5', 'voice' => ''],
+        'mistral' => ['model' => 'voxtral-mini-tts-3-0', 'voice' => 'voice_480'],
     ];
 
     private string $model;
@@ -45,6 +46,7 @@ final class Speech
             'gemini' => $this->gemini($text),
             'openai', 'openrouter' => $this->openAiCompatible($text),
             'elevenlabs' => $this->elevenLabs($text),
+            'mistral' => $this->mistral($text),
         };
     }
 
@@ -114,6 +116,36 @@ final class Speech
         }
         $res = Http::postForBinary($url, ['xi-api-key' => $p['api_key'], 'Accept' => 'audio/mpeg'], $body);
         return ['bytes' => $res['body'], 'ext' => 'mp3'];
+    }
+
+    /**
+     * Mistral Voxtral TTS: POST JSON, resposta é JSON com audio_data em base64.
+     * Diferente do formato OpenAI (que retorna bytes crus).
+     */
+    private function mistral(string $text): array
+    {
+        $p = Config::provider('mistral');
+        $body = [
+            'model' => $this->model,
+            'input' => $text,
+            'voice_id' => $this->voice,
+            'response_format' => 'wav',
+        ];
+        $res = Http::postJson(
+            $p['base_url'] . '/audio/speech',
+            ['Authorization' => 'Bearer ' . $p['api_key']],
+            $body,
+            60
+        );
+        $data = (string)($res['audio_data'] ?? '');
+        if ($data === '') {
+            throw new ProviderException('mistral tts: resposta sem áudio');
+        }
+        $bytes = base64_decode($data, true);
+        if ($bytes === false) {
+            throw new ProviderException('mistral tts: áudio inválido');
+        }
+        return ['bytes' => $bytes, 'ext' => 'wav'];
     }
 
     public static function wav(string $pcm, int $rate, int $channels = 1, int $bits = 16): string
